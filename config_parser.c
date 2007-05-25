@@ -16,7 +16,7 @@
 
 #define CONFIG_BLOCK_BEGIN		"button"
 #define CONFIG_BLOCK_END		"endbutton"
-
+#define MAX_BEVS	10
 
 btnx_event **config_parse(void)
 {
@@ -37,7 +37,7 @@ btnx_event **config_parse(void)
 		return NULL;
 	}
 	
-	bevs = (btnx_event **) calloc(10, sizeof(btnx_event*));
+	bevs = (btnx_event **) calloc(MAX_BEVS+1, sizeof(btnx_event*));
 	
 	while (fgets(buffer, 511, fp) != NULL)
 	{
@@ -96,6 +96,8 @@ btnx_event **config_parse(void)
 					}
 					block_begin = 1;
 					i++;
+					if (i >= MAX_BEVS)
+						bevs = (btnx_event **) realloc(bevs, (i+2)*sizeof(bevs));
 					bevs[i] = (btnx_event *) calloc(1, sizeof(btnx_event));
 					bevs[i+1] = NULL;
 				}

@@ -121,6 +121,8 @@ int main(void)
 	else
 		max_fd = fd_ev_key;
 	
+	fprintf(stderr, "No startup errors\n");
+	
 	for (;;)
 	{
 		FD_ZERO(&fds);
