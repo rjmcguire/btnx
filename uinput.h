@@ -7,8 +7,10 @@
 #ifndef UINPUT_H_
 #define UINPUT_H_
 
-#define UMOUSE_NAME	"btnx mouse"
-#define UKBD_NAME	"btnx keyboard"
+#define UMOUSE_NAME		"btnx mouse"
+#define UKBD_NAME		"btnx keyboard"
+
+#define UINPUT_LOCATION	"/dev/input/uinput"
 
 #include "btnx.h"
 

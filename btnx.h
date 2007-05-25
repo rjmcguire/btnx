@@ -7,7 +7,7 @@
 #ifndef BTNX_H_
 #define BTNX_H_
 
-#define MAX_MODS	3
+#define MAX_MODS		3
 
 enum
 {

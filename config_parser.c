@@ -6,6 +6,8 @@
 
 #include "config_parser.h"
 
+#define _GNU_SOURCE				// Needed for strcasestr()
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -22,25 +24,10 @@ btnx_event **config_parse(void)
 	char buffer[CONFIG_PARSE_BUFFER_SIZE];
 	char option[CONFIG_PARSE_OPTION_SIZE];
 	char value[CONFIG_PARSE_VALUE_SIZE];
-	char *path;
 	char *loc_eq, *loc_com, *loc_beg, *loc_end;
 	int block_begin = 0, block_end = 1;
 	btnx_event **bevs;
 	int i=-1;
-	
-	/*if (!strcmp(CONFIG_PATH, "home"))
-	{
-		if (!(path = getenv("HOME")))
-		{
-			perror("Error: could not retrieve config path. Is HOME env.var. set?");
-			return NULL;
-		}
-	}
-	else
-	{
-		perror("Error: unknown config path option.");
-		return NULL;
-	}*/
 	
 	sprintf(buffer,"%s/%s", CONFIG_PATH, CONFIG_NAME);
 	
@@ -212,21 +199,11 @@ int config_get_keycode(const char *value)
 			loc_beg = strcasestr(buffer, value) + strlen(value);
 			if (!isspace(*loc_beg))
 				continue;
-			//printf("%s\n",loc_beg);
 			pclose(fp);
 			return strtol(loc_beg, NULL, 0);
 		}
 	}
 	pclose(fp);
-	
-	/*printf("%s\n", buffer);
-	len = strlen(buffer);
-	if (len > 0 && len > strlen(value))
-	{
-		loc_beg = strcasestr(buffer, value) + strlen(value);
-		printf("%s\n",loc_beg);
-		return strtol(loc_beg, NULL, 0);
-	}*/
 	
 	return 0;
 }

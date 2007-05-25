@@ -24,7 +24,6 @@
 /* Parses the configuration file */
 btnx_event **config_parse(void);
 
-/* Checks which option value is being parsed and calls fillConfigValue for that option. */
 char *config_add_value(btnx_event *e, char *option, char *value);
 
 int config_get_keycode(const char *value);

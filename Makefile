@@ -2,8 +2,8 @@
 CC = gcc
 CFLAGS = -Wall
 
-DEPS = uinput.h btnx.h config_parser.h
-OBJ = btnx.o uinput.o config_parser.o
+DEPS = uinput.h btnx.h config_parser.h devices_parser.h
+OBJ = btnx.o uinput.o config_parser.o devices_parser.o
 BIN = btnx
 
 %.o: %.c $(DEPS)

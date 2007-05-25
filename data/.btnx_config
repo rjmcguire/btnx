@@ -1,4 +1,77 @@
 
+#----------------------------------------------------------
+# 	btnx configuration file
+#----------------------------------------------------------
+#
+###########################################################
+#	READ ME FIRST!!!!!!!!!!!!!!!!!!!
+###########################################################
+#	This file is used to configure btnx's behavior. 
+#	Lines are commented with # characters.
+#
+#	Basic structure of a button configuration
+#   -------------------------------------------------------
+#	Button
+#	rawcode = 0x00000000
+#	type	= 0
+#	keycode	= KEY
+#	mod1	= KEY
+#	mod2	= KEY
+#	mod3	= KEY
+#	EndButton
+#
+#
+#	Description of the structure
+#	-------------------------------------------------------
+#	The configuration field for a button must be started by
+#	a "Button" line and closed by an "EndButton" line. Inside
+#	the configuration you MUST specify:
+#		- rawcode
+#		- type
+#		- keycode
+#
+#	The mod[1..3] fields are optional. The fields have the
+#	following meanings:
+#
+#	rawcode: the byte stream sent to an event handler by the
+#	mouse driver, used to identify the button. It must be a
+#	32-bit base16 (hexadecimal) value preceded by "0x". You
+#	probably should not change this value at all.
+#
+#	type: the type of event the button sends. If type is 0,
+#	pressing the button sends a button down signal and
+#	releasing it sends a release signal. If type = 1, clicking
+#	the button send both press and release signals simultaneously.
+#	This is needed for MX Revolution's top wheel sideway clicks
+#	because the mouse does not send any button release events.
+#
+#	keycode: this is the actual value of the key or button to
+#	send when the mouse button is pressed. Have a look at the
+#	events file (located at /etc/btnx/events) for all possible
+#	values. You can use any key (KEY_*) or button (BTN_*) events
+#	in that file. The events beginning with KEY_ are for simulating
+#	keyboard events and the events beginning with BTN_ are for
+#	simulating mouse button events. Not all of them are handled by
+#	X. You must use the string describing the event! Not the number.
+#
+#	mod[1..3]: these are modifier key values. Examples are
+#	shift (KEY_LEFTSHIFT, KEY_RIGHTSHIFT), ctrl (KEY_LEFTCTRL, ...),
+#	etc. You can combine up to three modifier keys together with
+#	a keycode. You can even combine them with mouse button events.
+#	You do not need to specify any mod keys if you don't need to.
+#
+#	Go ahead and specify a Button section for each one of your
+#	mouse buttons.
+#-----------------------------------------------------------
+
+
+
+# These buttons are configured for the MX Revolution mouse.
+#-----------------------------------------------------------
+
+
+# Thumb wheel forward. 
+# Does a Ctrl+Alt+Left, useful for switching workspaces.
 Button
 rawcode	=	0x00180100
 type 	=	0
@@ -8,6 +81,9 @@ mod2 	=	KEY_LEFTALT
 mod3	=	NONE
 EndButton
 
+
+# Thumb wheel back. 
+# Does a Ctrl+Alt+Right, useful for switching workspaces.
 Button
 rawcode =	0x001A0100
 type 	=	0
@@ -16,6 +92,8 @@ mod1	=	KEY_LEFTCTRL
 mod2	=	KEY_LEFTALT
 EndButton
 
+# Thumb wheel press. 
+# Does an Alt+LeftMouseButton. Useful for dragging windows.
 Button
 rawcode =	0x001C0100
 type 	=	0
@@ -23,6 +101,10 @@ keycode =	BTN_LEFT
 mod1	=	KEY_LEFTALT
 EndButton
 
+
+# Thumb button back. 
+# Does a Ctrl+PageDown. Useful for moving through tabs 
+# (Firefox, gnome-terminal, etc.)
 Button
 rawcode =	0x00130100
 type 	=	0
@@ -30,6 +112,10 @@ keycode =	KEY_PAGEDOWN
 mod1	=	KEY_LEFTCTRL
 EndButton
 
+
+# Thumb button forward. 
+# Does a Ctrl+PageUp. Useful for moving through tabs 
+# (Firefox, gnome-terminal, etc.)
 Button
 rawcode =	0x00140100
 type 	=	0
@@ -37,12 +123,16 @@ keycode =	KEY_PAGEUP
 mod1	=	KEY_LEFTCTRL
 EndButton
 
+# Search key. 
+# Simulates a mouse-wheel click.
 Button
 rawcode =	0x00880000
 type 	=	0
 keycode =	BTN_MIDDLE
 EndButton
 
+# Top wheel right. 
+# Does an Alt+Right. Ex. Firefox back
 Button
 rawcode =	0x00060001
 type 	=	1
@@ -50,6 +140,8 @@ keycode =	KEY_RIGHT
 mod1	=	KEY_LEFTALT
 EndButton
 
+# Top wheel left. 
+# Does an Alt+Left. Ex. Firefox forward
 Button
 rawcode =	0x000600FF
 type 	=	1

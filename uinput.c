@@ -26,13 +26,13 @@ int uinput_init(const char *dev_name)
   struct uinput_user_dev dev_mouse, dev_kbd;
   int i;
 
-  uinput_mouse_fd = open("/dev/input/uinput", O_WRONLY | O_NDELAY);
+  uinput_mouse_fd = open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
   if (uinput_mouse_fd < 0) 
   {
-    perror("Error opening the uinput device");
+    perror("Error opening the uinput device.\nMake sure you have loaded the uinput module (modprobe uinput)");
     exit(EXIT_FAILURE);
   }
-  uinput_kbd_fd = open("/dev/input/uinput", O_WRONLY | O_NDELAY);
+  uinput_kbd_fd = open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
   if (uinput_kbd_fd < 0) 
   {
     perror("Error opening the uinput device");
@@ -44,7 +44,7 @@ int uinput_init(const char *dev_name)
   write(uinput_mouse_fd, &dev_mouse, sizeof(dev_mouse));
   
   memset(&dev_kbd, 0, sizeof(dev_kbd));
-  strcpy(dev_kbd.name, UMOUSE_NAME);
+  strcpy(dev_kbd.name, UKBD_NAME);
   write(uinput_kbd_fd, &dev_kbd, sizeof(dev_kbd));
 
   ioctl(uinput_mouse_fd, UI_SET_EVBIT, EV_REL);
