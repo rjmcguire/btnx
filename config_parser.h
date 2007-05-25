@@ -1,4 +1,8 @@
 
+ /* 
+  * Copyright (C) 2007  Olli Salonen (www.ollisalonen.com)
+  * see btnx.c for detailed license information
+  */
 
 #ifndef CONFIG_PARSER_H_
 #define CONFIG_PARSER_H_

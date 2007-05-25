@@ -1,0 +1,59 @@
+
+Button
+rawcode	=	0x00180100
+type 	=	0
+keycode	=	KEY_LEFT
+mod1 	=	KEY_LEFTCTRL
+mod2 	=	KEY_LEFTALT
+mod3	=	NONE
+EndButton
+
+Button
+rawcode =	0x001A0100
+type 	=	0
+keycode =	KEY_RIGHT
+mod1	=	KEY_LEFTCTRL
+mod2	=	KEY_LEFTALT
+EndButton
+
+Button
+rawcode =	0x001C0100
+type 	=	0
+keycode =	BTN_LEFT
+mod1	=	KEY_LEFTALT
+EndButton
+
+Button
+rawcode =	0x00130100
+type 	=	0
+keycode =	KEY_PAGEDOWN
+mod1	=	KEY_LEFTCTRL
+EndButton
+
+Button
+rawcode =	0x00140100
+type 	=	0
+keycode =	KEY_PAGEUP
+mod1	=	KEY_LEFTCTRL
+EndButton
+
+Button
+rawcode =	0x00880000
+type 	=	0
+keycode =	BTN_MIDDLE
+EndButton
+
+Button
+rawcode =	0x00060001
+type 	=	1
+keycode =	KEY_RIGHT
+mod1	=	KEY_LEFTALT
+EndButton
+
+Button
+rawcode =	0x000600FF
+type 	=	1
+keycode =	KEY_LEFT
+mod1	=	KEY_LEFTALT
+EndButton
+

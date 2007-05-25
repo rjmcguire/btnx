@@ -13,4 +13,4 @@ all: $(OBJ)
 	$(CC) -o $(BIN) $^ $(CFLAGS)
 
 clean:
-	rm -f ./*.o $(OBJ)
+	rm -f $(OBJ) $(BIN)

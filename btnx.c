@@ -1,23 +1,23 @@
 
 /*----------------------------------------------------------------------*
- * btnx (Button extension): A program for MX Revolution to reroute		*
- * events from the mouse as keyboard and other mouse events (or both).	*
- * Copyright (C) 2007  Olli Salonen (www.ollisalonen.com)				*
- *																		*
- * This program is free software; you can redistribute it and/or		*
- * modify it under the terms of the GNU General Public License			*
- * as published by the Free Software Foundation; either version 2		*
- * of the License, or (at your option) any later version.				*
- *																		*
- * This program is distributed in the hope that it will be useful,		*
- * but WITHOUT ANY WARRANTY; without even the implied warranty of		*
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the		*
- * GNU General Public License for more details.							*
- *																		*
- * You should have received a copy of the GNU General Public License	*
- * along with this program; if not, write to the Free Software			*
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, 					*
- * Boston, MA  02110-1301, USA.											*
+ * btnx (Button extension): A program for MX Revolution to reroute      *
+ * events from the mouse as keyboard and other mouse events (or both).  *
+ * Copyright (C) 2007  Olli Salonen (www.ollisalonen.com)               *
+ *                                                                      *
+ * This program is free software; you can redistribute it and/or        *
+ * modify it under the terms of the GNU General Public License          *
+ * as published by the Free Software Foundation; either version 2       *
+ * of the License, or (at your option) any later version.               *
+ *                                                                      *
+ * This program is distributed in the hope that it will be useful,      *
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of       *
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the        *
+ * GNU General Public License for more details.                         *
+ *                                                                      *
+ * You should have received a copy of the GNU General Public License    *
+ * along with this program; if not, write to the Free Software          *
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor,                   *
+ * Boston, MA  02110-1301, USA.                                         *
  *----------------------------------------------------------------------*/
 
 #include <stdlib.h>
@@ -37,6 +37,8 @@
 #define INPUT_BUFFER_SIZE	512
 #define CHAR2INT(c, x) (((int)(c)) << ((x) * 8))
 
+
+//	Unnecessary: defined in the configuration file
 #define BTNX1	0x00180100	// Thumb wheel forw
 #define BTNX2	0x001A0100	// Thumb wheel back
 #define BTNX3	0x001C0100	// Thumb wheel press
@@ -157,8 +159,8 @@ int main(void)
 	
 	int c=7;
 	
-	printf("btnx_event:\nrawcode: %08x\tkeycode: %d\tmod1: %d\tmod2: %d\tmod3: %d\n",
-		bevs[c]->rawcode, bevs[c]->keycode, bevs[c]->mod[0], bevs[c]->mod[1], bevs[c]->mod[2]);
+	//printf("btnx_event:\nrawcode: %08x\tkeycode: %d\tmod1: %d\tmod2: %d\tmod3: %d\n",
+	//	bevs[c]->rawcode, bevs[c]->keycode, bevs[c]->mod[0], bevs[c]->mod[1], bevs[c]->mod[2]);
 	
 	fd_ev_btn = open("/dev/input/event4", O_RDONLY);
 	if (fd_ev_btn < 0)
