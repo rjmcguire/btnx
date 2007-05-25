@@ -1,0 +1,8 @@
+
+Installation instructions:
+$ make
+Then, as root:
+$ make install
+
+Uninstallation:
+$ make uninstall
