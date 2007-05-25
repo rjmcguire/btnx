@@ -77,7 +77,7 @@ echo "Done."
 chown root $INIT_DIR/$NAME
 chmod 0744 $INIT_DIR/$NAME
 
-update-rc.d $NAME start 49 5 . stop 49 0 1 2 3 4 6 .
+update-rc.d $NAME start 49 2 3 4 5 . stop 49 0 1 6 .
 
 
 echo "$NAME is installed. Starting $NAME."

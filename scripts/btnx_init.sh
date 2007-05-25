@@ -42,6 +42,7 @@ LOG=/etc/btnx/$NAME.log
 #
 do_start()
 {
+	modprobe uinput
 	# Return
 	#   0 if daemon has been started
 	#   1 if daemon was already running
