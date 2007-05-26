@@ -7,14 +7,6 @@
 
 #include "device.h"
 
-
-/*const int devices[][2] = 
-{ //	VendorID	ProductID
-	{	0x046D,		0xC51A	},	// Logitech MX Revolution
-	{	0x046D,		0xC518	},	// Logitech VX Revolution
-	{	0xFFFF,		0xFFFF	}	// Last Field MUST be 0xFFFF, 0xFFFF
-};*/
-
 const device devices[] =
 { //	Name			VendorID	ProductID
 	{	"mxrevo",		0x046D,		0xC51A	},	// Logitech MX Revolution
