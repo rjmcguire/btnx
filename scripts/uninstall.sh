@@ -16,9 +16,13 @@ CONFIG_DIR=/etc/btnx
 CONFIG=btnx_config
 EVENTS=events
 
+echo "Please wait a while for the btnx daemon to stop."
+
 # Stop btnx daemon
 $SCRIPT_DIR/$NAME stop 2> /dev/null
 
+echo "btnx daemon stopped."
+echo -ne "Uninstalling..."
 # Remove config dir
 if [ -d $CONFIG_DIR ]; then
 	rm -rf $CONFIG_DIR
@@ -27,6 +31,7 @@ if [ -d $CONFIG_DIR ]; then
 		exit 1
 	fi
 fi
+echo -ne "."
 
 # Remove the binary file
 if [ -f $BIN_DIR/$NAME ]; then
@@ -36,6 +41,7 @@ if [ -f $BIN_DIR/$NAME ]; then
 		exit 1
 	fi
 fi
+echo -ne "."
 
 # Remove init script
 if [ -f $SCRIPT_DIR/$NAME ]; then
@@ -45,9 +51,10 @@ if [ -f $SCRIPT_DIR/$NAME ]; then
 		exit 1
 	fi
 fi
+echo "."
 
 # Unregister the daemon
-update-rc.d -f $NAME remove
+update-rc.d -f $NAME remove > /dev/null
 
 
 echo "Done. $NAME successfully uninstalled."
