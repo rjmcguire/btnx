@@ -90,16 +90,23 @@ int btnx_event_read(int fd, int *pressed)
 
 int main(void)
 {
-	int fd_ev_btn, fd_ev_key;
+	int fd_ev_btn=0, fd_ev_key=-1;
 	fd_set fds;
 	int raw_code;
 	int max_fd, ready;
 	int pressed=0;
-	btnx_event **bevs = config_parse();
+	btnx_event **bevs;
 	int bev_index;
 	char *mouse_event=NULL, *kbd_event=NULL;
 	
 	devices_parser(&mouse_event, &kbd_event);
+	bevs = config_parse();
+	
+	if (bevs == NULL)
+	{
+		fprintf(stderr, "Error: configuration file error.\n");
+		exit(1);
+	}
 	
 	fd_ev_btn = open(mouse_event, O_RDONLY);
 	if (fd_ev_btn < 0)
@@ -107,11 +114,14 @@ int main(void)
 		perror("Error opening button event file descriptor");
 		exit(EXIT_FAILURE);
 	}
-	fd_ev_key = open(kbd_event, O_RDONLY);
-	if (fd_ev_key < 0)
+	if (kbd_event != NULL)
 	{
-		perror("Error opening key event file descriptor");
-		exit(EXIT_FAILURE);
+		fd_ev_key = open(kbd_event, O_RDONLY);
+		if (fd_ev_key < 0)
+		{
+			perror("Error opening key event file descriptor");
+			exit(EXIT_FAILURE);
+		}
 	}
 	
 	uinput_init("btnx");
@@ -127,7 +137,8 @@ int main(void)
 	{
 		FD_ZERO(&fds);
 		FD_SET(fd_ev_btn, &fds);
-		FD_SET(fd_ev_key, &fds);
+		if (fd_ev_key != -1)
+			FD_SET(fd_ev_key, &fds);
 	
 		ready = select(max_fd+1, &fds, NULL, NULL, NULL);
 		
@@ -139,8 +150,13 @@ int main(void)
 		{
 			if (FD_ISSET(fd_ev_btn, &fds))
 				raw_code = btnx_event_read(fd_ev_btn, &pressed);
-			else if (FD_ISSET(fd_ev_key, &fds))
-				raw_code = btnx_event_read(fd_ev_key, &pressed);
+			else if (fd_ev_key != 0)
+			{
+				if (FD_ISSET(fd_ev_key, &fds))
+					raw_code = btnx_event_read(fd_ev_key, &pressed);
+				else
+					continue;
+			}
 			else
 				continue;
 			
@@ -148,7 +164,7 @@ int main(void)
 			{
 				if (bevs[bev_index]->type == BUTTON_IMMEDIATE)
 				{
-					printf("immediate\n");
+					//printf("immediate\n");
 					bevs[bev_index]->pressed = 1;
 					uinput_key_press(bevs[bev_index]);
 					bevs[bev_index]->pressed = 0;

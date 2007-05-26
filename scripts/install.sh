@@ -10,6 +10,7 @@ INIT_DIR=/etc/init.d
 SCRIPT_DIR=scripts
 SCRIPT_INIT=btnx_init.sh
 DATA_DIR=data
+DEFAULTS_DIR=$DATA_DIR/defaults
 NAME=btnx
 BIN_DIR=/usr/sbin
 PROGRAM=$BIN_DIR/$NAME
@@ -32,6 +33,14 @@ else
 	echo -ne "."
 fi
 
+# Copy the default configurations to the config directory.
+cp -r $DEFAULTS_DIR $CONFIG_DIR
+if [ $? -ne 0 ]; then
+	echo "Error: could not copy $DEFAULTS_DIR to $CONFIG_DIR."
+	exit 1
+fi
+echo -ne "."
+
 # Copy the events file to the config directory.
 #echo -ne "Installing events... "
 cp $DATA_DIR/$EVENTS $CONFIG_DIR
@@ -43,12 +52,12 @@ echo -ne "."
 
 # Copy the config file to the config directory.
 #echo -ne "Installing configuration... "
-cp $DATA_DIR/$CONFIG $CONFIG_DIR
-if [ $? -ne 0 ]; then
-	echo "Error: could not copy $CONFIG to $CONFIG_DIR."
-	exit 1
-fi
-echo -ne "."
+#cp $DATA_DIR/$CONFIG $CONFIG_DIR
+#if [ $? -ne 0 ]; then
+#	echo "Error: could not copy $CONFIG to $CONFIG_DIR."
+#	exit 1
+#fi
+#echo -ne "."
 
 # Make sure a previous btnx daemon is not running
 if [ -f $INIT_DIR/$NAME ]; then

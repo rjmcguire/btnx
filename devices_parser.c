@@ -13,16 +13,78 @@
 #include <errno.h>
 
 #include "devices_parser.h"
+#include "device.h"
+
+#define DD_BUFFER_SIZE			128
+#define SEARCH_STRING_SIZE		64
+
+/* 
+ * The Vendor and Product IDs for supported mice 
+ * as included in /proc/bus/input/devices
+ */
+
+/*const int devices[][2] = 
+{ //	VendorID	ProductID
+	{	0x046D,		0xC51A	},	// Logitech MX Revolution
+	{	0x046D,		0xC518	},	// Logitech VX Revolution
+	{	0xFFFF,		0xFFFF	}	// Last Field MUST be 0xFFFF, 0xFFFF
+};*/
+
+
+int detect_device(char *search_str)
+{
+	FILE *fp;
+	int found=0, i=0;
+	char buffer[DD_BUFFER_SIZE];
+	
+	while (found == 0 && !(device_get_vendor(i) == 0xFFFF && device_get_product(i) == 0xFFFF))
+		//!(devices[i][0] == 0xFFFF && devices[i][1] == 0xFFFF))
+	{
+		sprintf(buffer, "cat %s | /bin/grep -i -c \"Vendor=%04x Product=%04x\"",
+			DEVICES_FILE, device_get_vendor(i), device_get_product(i));
+			//DEVICES_FILE, devices[i][0], devices[i][1]);
+		if (!(fp = popen(buffer, "r")))
+		{
+			perror("detect_device() could not open /proc/bus/input/devices");
+			exit(1);
+		}
+		if (fgets(buffer, 2, fp) == NULL)
+		{
+			fprintf(stderr, "detect_device() could not read grep output\n");
+			exit(1);
+		}
+		if (buffer[0] != '0')
+		{
+			found = 1;
+			sprintf(search_str, "Vendor=%04x Product=%04x", 
+				device_get_vendor(i), device_get_product(i));
+				//devices[i][0], devices[i][1]);
+		}
+		pclose(fp);
+		i++;
+	}
+	
+	return found;
+}
+
+//int set_device(char *device_name)
 
 void devices_parser(char **mouse_event, char **kbd_event)
 {
 	FILE *fp;
 	char buffer[DP_BUFFER_SIZE];
-	char mx_ss[64], vx_ss[64];
+	//char mx_ss[64], vx_ss[64];
+	char search_str[SEARCH_STRING_SIZE];
 	int found_section=0;
 	char *found_mouse=NULL, *found_kbd=NULL;
 	
 	*mouse_event = NULL; *kbd_event = NULL;
+	
+	if (detect_device(search_str) == 0)
+	{
+		fprintf(stderr, "No supported mice detected. You can make a support request for your mouse\n");
+		exit(1);
+	}
 	
 	if (!(fp = fopen(DEVICES_FILE, "r")))
 	{
@@ -30,14 +92,14 @@ void devices_parser(char **mouse_event, char **kbd_event)
 		exit(1);
 	}
 	
-	sprintf(mx_ss, "Vendor=%s Product=%s", VENDOR_ID, MX_PRODUCT_ID);
-	sprintf(vx_ss, "Vendor=%s Product=%s", VENDOR_ID, VX_PRODUCT_ID);
+	//sprintf(mx_ss, "Vendor=%s Product=%s", VENDOR_ID, MX_PRODUCT_ID);
+	//sprintf(vx_ss, "Vendor=%s Product=%s", VENDOR_ID, VX_PRODUCT_ID);
 	while ((fgets(buffer, DP_BUFFER_SIZE-1, fp) != NULL &&
 			!(found_mouse && found_kbd)))
 	{
 		if (found_section == 0)
 		{
-			if (strcasestr(buffer, mx_ss) != NULL || strcasestr(buffer, vx_ss) != NULL)
+			if (strcasestr(buffer, search_str) != NULL)
 				found_section = 1; 
 		}
 		else
@@ -65,14 +127,14 @@ void devices_parser(char **mouse_event, char **kbd_event)
 		}
 	}
 	
-	printf("mouse=%s searchkey=%s\n", *mouse_event, *kbd_event);
-	
-	if (found_mouse == NULL || found_kbd == NULL || mouse_event == NULL || kbd_event == NULL)
+	if (found_mouse == NULL || mouse_event == NULL)
 	{
 		fprintf(stderr, "Error: could not parse mouse event handlers\n.");
 		exit(1);
 	}
-	
+	if (found_kbd == NULL || kbd_event == NULL)
+		fprintf(stderr, "Did not find additional event handlers.\n");
+		
 	fclose(fp);
 }
 

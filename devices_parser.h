@@ -7,9 +7,10 @@
 #ifndef DEVICES_PARSER_H_
 #define DEVICES_PARSER_H_
 
-#define VENDOR_ID			"046d"
+/*#define VENDOR_ID			"046d"
 #define MX_PRODUCT_ID		"c51a"
 #define VX_PRODUCT_ID		"c518"
+*/
 
 #define MOUSE_PATTERN		"mouse"
 #define KEYBOARD_PATTERN	"kbd"

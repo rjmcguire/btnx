@@ -5,6 +5,7 @@
   */
 
 #include "config_parser.h"
+#include "device.h"
 
 #define _GNU_SOURCE				// Needed for strcasestr()
 
@@ -13,6 +14,7 @@
 #include <stdio.h>
 #include <ctype.h>
 #include <errno.h>
+#include <unistd.h>
 
 #define CONFIG_BLOCK_BEGIN		"button"
 #define CONFIG_BLOCK_END		"endbutton"
@@ -27,14 +29,39 @@ btnx_event **config_parse(void)
 	char *loc_eq, *loc_com, *loc_beg, *loc_end;
 	int block_begin = 0, block_end = 1;
 	btnx_event **bevs;
-	int i=-1;
+	int i=-1, ret;
 	
 	sprintf(buffer,"%s/%s", CONFIG_PATH, CONFIG_NAME);
 	
 	if (!(fp = fopen(buffer,"r")))
 	{
-		perror("Could not find a config file");
-		return NULL;
+		if (errno == ENOENT)
+		{
+			sprintf(buffer, "cp %s/%s%s %s/%s 2> error.log",
+					DEFAULTS_CONFIG_PATH, 
+					DEFAULT_CONFIG_NAME, 
+					device_get_name(-1),
+					CONFIG_PATH,
+					CONFIG_NAME);
+			ret = system(buffer);
+			if (ret != 0)
+			{
+				fprintf(stderr, "Error: No config defined and default configuration missing for %s.\n",
+					device_get_name(-1));
+				exit(1);
+			}
+			sprintf(buffer,"%s/%s", CONFIG_PATH, CONFIG_NAME);
+			if (!(fp = fopen(buffer,"r")))
+			{
+				perror("Could not read the config file");
+				return NULL;
+			}
+		}
+		else
+		{
+			perror("Could not read the config file");
+			return NULL;
+		}
 	}
 	
 	bevs = (btnx_event **) calloc(MAX_BEVS+1, sizeof(btnx_event*));

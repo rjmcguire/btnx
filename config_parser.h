@@ -10,11 +10,13 @@
 #include "btnx.h"
 
 #ifdef DEBUG
-#define CONFIG_NAME			"btnx_config_debug"
+#define CONFIG_NAME				"btnx_config_debug"
 #else
-#define CONFIG_NAME			"btnx_config"
+#define CONFIG_NAME				"btnx_config"
 #endif
-#define CONFIG_PATH			"/etc/btnx"
+#define CONFIG_PATH				"/etc/btnx"
+#define DEFAULTS_CONFIG_PATH	"/etc/btnx/defaults"
+#define DEFAULT_CONFIG_NAME		"default_config_"
 
 #define CONFIG_PARSE_BUFFER_SIZE			512
 #define CONFIG_PARSE_OPTION_SIZE			64
