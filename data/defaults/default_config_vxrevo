@@ -1,6 +1,6 @@
 
 #----------------------------------------------------------
-# 	Logitech MX Revolution btnx configuration file
+# 	Logitech VX Revolution btnx configuration file
 #----------------------------------------------------------
 #
 ###########################################################
@@ -66,7 +66,7 @@
 
 
 
-# These buttons are configured for the MX Revolution mouse.
+# These buttons are configured for the VX Revolution mouse.
 #-----------------------------------------------------------
 
 # Left mouse button
@@ -88,7 +88,16 @@
 #keycode	=	KEY_UNKNOWN
 #EndButton
 
-# Top wheel scroll down
+# Mouse wheel press
+# NOTE: This is commented out. You probably don't want
+# to send extra events when pressing this button!
+#Button
+#rawcode	=	0x01011200
+#type 	=	0
+#keycode	=	KEY_UNKNOWN
+#EndButton
+
+# Mouse wheel scroll down
 # NOTE: This is commented out. You probably don't want
 # to send extra events when pressing this button!
 #Button
@@ -98,7 +107,7 @@
 #EndButton
 
 
-# Top wheel scroll up
+# Mouse wheel scroll up
 # NOTE: This is commented out. You probably don't want
 # to send extra events when pressing this button!
 #Button
@@ -107,7 +116,7 @@
 #keycode	=	KEY_UNKNOWN
 #EndButton
 
-# Thumb wheel forward. 
+# Zoom+ 
 # Does a Ctrl+Alt+Left, useful for switching workspaces.
 Button
 rawcode	=	0x01011800
@@ -118,25 +127,15 @@ mod2 	=	KEY_LEFTALT
 mod3	=	NONE
 EndButton
 
-
-# Thumb wheel back. 
-# Does a Ctrl+Alt+Right, useful for switching workspaces.
+# Zoom-
+# Does a Ctrl+Alt+Left, useful for switching workspaces.
 Button
-rawcode	=	0x01011A00
+rawcode	=	0x01011900
 type 	=	0
-keycode =	KEY_RIGHT
-mod1	=	KEY_LEFTCTRL
-mod2	=	KEY_LEFTALT
-EndButton
-
-
-# Thumb wheel press. 
-# Does an Alt+LeftMouseButton. Useful for dragging windows.
-Button
-rawcode	=	0x01011C00
-type 	=	0
-keycode =	BTN_LEFT
-mod1	=	KEY_LEFTALT
+keycode	=	KEY_RIGHT
+mod1 	=	KEY_LEFTCTRL
+mod2 	=	KEY_LEFTALT
+mod3	=	NONE
 EndButton
 
 
@@ -163,11 +162,10 @@ EndButton
 
 
 # Search key. 
-# Simulates a mouse-wheel click.
 Button
 rawcode	=	0x01008800
 type 	=	0
-keycode =	BTN_MIDDLE
+keycode =	KEY_F5
 EndButton
 
 

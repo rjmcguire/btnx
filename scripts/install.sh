@@ -50,14 +50,9 @@ if [ $? -ne 0 ]; then
 fi
 echo -ne "."
 
-# Copy the config file to the config directory.
-#echo -ne "Installing configuration... "
-#cp $DATA_DIR/$CONFIG $CONFIG_DIR
-#if [ $? -ne 0 ]; then
-#	echo "Error: could not copy $CONFIG to $CONFIG_DIR."
-#	exit 1
-#fi
-#echo -ne "."
+# Make sure an old config file isn't installed. Won't
+# copy the correct default config otherwise on first run.
+[ -f $CONFIG_DIR/$CONFIG ] && rm $CONFIG_DIR/$CONFIG
 
 # Make sure a previous btnx daemon is not running
 if [ -f $INIT_DIR/$NAME ]; then
