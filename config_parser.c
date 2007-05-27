@@ -37,7 +37,7 @@ btnx_event **config_parse(void)
 	{
 		if (errno == ENOENT)
 		{
-			sprintf(buffer, "cp %s/%s%s %s/%s 2> error.log",
+			sprintf(buffer, "cp %s/%s%s %s/%s",
 					DEFAULTS_CONFIG_PATH, 
 					DEFAULT_CONFIG_NAME, 
 					device_get_name(-1),
