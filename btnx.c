@@ -2,7 +2,7 @@
 /*------------------------------------------------------------------------*
  * btnx (Button extension): A program for rerouting                       *
  * events from the mouse as keyboard and other mouse events (or both).    *
- * Copyright (C) 2007  Olli Salonen (www.ollisalonen.com)                 *
+ * Copyright (C) 2007  Olli Salonen <oasalonen@gmail.com>                 *
  *                                                                        *
  * This program is free software; you can redistribute it and/or          *
  * modify it under the terms of the GNU General Public License            *

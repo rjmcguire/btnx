@@ -10,7 +10,7 @@
 #                    reroutes them through uinput as other user-defined events.
 ### END INIT INFO
 
-# Author: Olli Salonen <btnx@ollisalonen.com>
+# Author: Olli Salonen <oasalonen@gmail.com>
 
 # Do NOT "set -e"
 

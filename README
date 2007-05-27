@@ -4,7 +4,7 @@ README file
 btnx: Button Extension- a daemon for sending keyboard and mouse
 combination events when pressing mouse buttons.
 
-Author: Olli Salonen
+Author: Olli Salonen <oasalonen@gmail.com>
 
 --------------------------------NOTE!---------------------------------- 
 btnx will only work for supported mice. You can find a list of supported

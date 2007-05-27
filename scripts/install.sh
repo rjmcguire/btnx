@@ -3,7 +3,7 @@
 #################################################
 # btnx install script				#
 # ----------------------------------------------#
-# Author: Olli Salonen <mail@ollisalonen.com>	#
+# Author: Olli Salonen <oasalonen@gmail.com>	#
 #################################################
 
 INIT_DIR=/etc/init.d

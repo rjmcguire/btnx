@@ -3,7 +3,7 @@
 #################################################
 # btnx uninstall script				#
 # ----------------------------------------------#
-# Author: Olli Salonen <mail@ollisalonen.com>	#
+# Author: Olli Salonen <oasalonen@gmail.com>	#
 #################################################
 
 SCRIPT_DIR=/etc/init.d

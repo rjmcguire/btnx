@@ -1,6 +1,6 @@
 
  /* 
-  * Copyright (C) 2007  Olli Salonen (www.ollisalonen.com)
+  * Copyright (C) 2007  Olli Salonen <oasalonen@gmail.com>
   * see btnx.c for detailed license information
   */
   
