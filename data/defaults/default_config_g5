@@ -1,6 +1,6 @@
 
 #----------------------------------------------------------
-# 	Logitech MX Revolution btnx configuration file
+# 	Logitech G5 btnx configuration file
 #----------------------------------------------------------
 #
 ###########################################################
@@ -66,88 +66,84 @@
 
 
 
-# These buttons are configured for the MX Revolution mouse.
+# These buttons are configured for the Logitech G5 mouse.
 #-----------------------------------------------------------
 
 
-# Thumb wheel forward. 
-# Does a Ctrl+Alt+Left, useful for switching workspaces.
-Button
-rawcode	=	0x01011800
-type 	=	0
-keycode	=	KEY_LEFT
-mod1 	=	KEY_LEFTCTRL
-mod2 	=	KEY_LEFTALT
-mod3	=	NONE
-EndButton
+# Left mouse button
+# NOTE: This is commented out. You probably don't want
+# to send extra events when pressing this button!
+#Button
+#rawcode	=	0x01011000
+#type 	=	0
+#keycode	=	KEY_UNKNOWN
+#EndButton
 
 
-# Thumb wheel back. 
-# Does a Ctrl+Alt+Right, useful for switching workspaces.
-Button
-rawcode	=	0x01011A00
-type 	=	0
-keycode =	KEY_RIGHT
-mod1	=	KEY_LEFTCTRL
-mod2	=	KEY_LEFTALT
-EndButton
+# Right mouse button
+# NOTE: This is commented out. You probably don't want
+# to send extra events when pressing this button!
+#Button
+#rawcode	=	0x01011100
+#type 	=	0
+#keycode	=	KEY_UNKNOWN
+#EndButton
 
 
-# Thumb wheel press. 
+# Thumb button
 # Does an Alt+LeftMouseButton. Useful for dragging windows.
 Button
-rawcode	=	0x01011C00
+rawcode =	0x01011300
 type 	=	0
 keycode =	BTN_LEFT
 mod1	=	KEY_LEFTALT
 EndButton
 
 
-# Thumb button back. 
-# Does a Ctrl+PageDown. Useful for moving through tabs 
-# (Firefox, gnome-terminal, etc.)
-Button
-rawcode	=	0x01011300
-type 	=	0
-keycode =	KEY_PAGEDOWN
-mod1	=	KEY_LEFTCTRL
-EndButton
+# Mouse wheel press
+# NOTE: This is commented out. You probably don't want
+# to send extra events when pressing this button!
+#Button
+#rawcode	=	0x01011200
+#type 	=	0
+#keycode	=	KEY_UNKNOWN
+#EndButton
 
 
-# Thumb button forward. 
-# Does a Ctrl+PageUp. Useful for moving through tabs 
-# (Firefox, gnome-terminal, etc.)
-Button
-rawcode	=	0x01011400
-type 	=	0
-keycode =	KEY_PAGEUP
-mod1	=	KEY_LEFTCTRL
-EndButton
+# Mouse wheel scroll down
+# NOTE: This is commented out. You probably don't want
+# to send extra events when pressing this button!
+#Button
+#rawcode	=	0x020008FF
+#type 	=	1
+#keycode	=	KEY_UNKNOWN
+#EndButton
 
 
-# Search key. 
-# Simulates a mouse-wheel click.
-Button
-rawcode	=	0x01008800
-type 	=	0
-keycode =	BTN_MIDDLE
-EndButton
+# Mouse wheel scroll up
+# NOTE: This is commented out. You probably don't want
+# to send extra events when pressing this button!
+#Button
+#rawcode	=	0x02000800
+#type 	=	1
+#keycode	=	KEY_UNKNOWN
+#EndButton
 
 
-# Top wheel right. 
+# Mouse wheel right. 
 # Does an Alt+Right. Ex. Firefox back
 Button
-rawcode	=	0x02000600
+rawcode =	0x02000600
 type 	=	1
 keycode =	KEY_RIGHT
 mod1	=	KEY_LEFTALT
 EndButton
 
 
-# Top wheel left. 
+# Mouse wheel left. 
 # Does an Alt+Left. Ex. Firefox forward
 Button
-rawcode	=	0x020006FF
+rawcode =	0x020006FF
 type 	=	1
 keycode =	KEY_LEFT
 mod1	=	KEY_LEFTALT

@@ -72,18 +72,28 @@ int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 int btnx_event_read(int fd, int *pressed)
 {
 	int code;
+	//int tmp;
 	unsigned char buffer[INPUT_BUFFER_SIZE];
 	
 	memset(buffer, '\0', INPUT_BUFFER_SIZE);
 	if (read(fd, buffer, INPUT_BUFFER_SIZE) < 1)
 		return 0;
 	
+	/*int i=0;
+	while (i < 15)
+	{
+		printf("%04x ", CHAR2INT(buffer[i], 0) | CHAR2INT(buffer[i+1], 1));
+		i+=2;
+	}
+	putchar('\n');*/
 	*pressed = buffer[12];
 	
-	if (buffer[8] == 0x02)
-		code = CHAR2INT(buffer[9], 3) | CHAR2INT(buffer[10], 2) | CHAR2INT(buffer[11], 1) | CHAR2INT(buffer[12], 0);
-	else
-		code = CHAR2INT(buffer[9], 3) | CHAR2INT(buffer[10], 2) | CHAR2INT(buffer[11], 1) | CHAR2INT(0, 0);
+	//if (buffer[8] == 0x02)
+	//	code = CHAR2INT(buffer[9], 3) | CHAR2INT(buffer[10], 2) | CHAR2INT(buffer[11], 1) | CHAR2INT(buffer[12], 0);
+	//else
+		code = CHAR2INT(buffer[8], 3) | CHAR2INT(buffer[11], 2) | CHAR2INT(buffer[10], 1) | CHAR2INT(buffer[13], 0);
+
+	//printf("code: %08x\n", code);
 
 	return code;
 }
