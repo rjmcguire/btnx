@@ -18,18 +18,6 @@
 #define DD_BUFFER_SIZE			128
 #define SEARCH_STRING_SIZE		64
 
-/* 
- * The Vendor and Product IDs for supported mice 
- * as included in /proc/bus/input/devices
- */
-
-/*const int devices[][2] = 
-{ //	VendorID	ProductID
-	{	0x046D,		0xC51A	},	// Logitech MX Revolution
-	{	0x046D,		0xC518	},	// Logitech VX Revolution
-	{	0xFFFF,		0xFFFF	}	// Last Field MUST be 0xFFFF, 0xFFFF
-};*/
-
 
 int detect_device(char *search_str)
 {

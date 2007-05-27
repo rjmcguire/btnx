@@ -7,6 +7,10 @@
 
 #include "device.h"
 
+/* 
+ * The Vendor and Product IDs for supported mice 
+ * as included in /proc/bus/input/devices
+ */
 const device devices[] =
 { //	Name			VendorID	ProductID
 	{	"mxrevo",		0x046D,		0xC51A	},	// Logitech MX Revolution

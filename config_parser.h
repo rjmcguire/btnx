@@ -15,6 +15,7 @@
 #define CONFIG_NAME				"btnx_config"
 #endif
 #define CONFIG_PATH				"/etc/btnx"
+#define EVENTS_NAME				"events"
 #define DEFAULTS_CONFIG_PATH	"/etc/btnx/defaults"
 #define DEFAULT_CONFIG_NAME		"default_config_"
 

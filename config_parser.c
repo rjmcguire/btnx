@@ -218,7 +218,7 @@ int config_get_keycode(const char *value)
 	if (!strcasecmp(value, "none"))
 		return 0;
 	
-	sprintf(buffer, "cat /home/daou/events | /bin/grep %s", value);
+	sprintf(buffer, "cat %s/%s | /bin/grep %s", CONFIG_PATH, EVENTS_NAME, value);
 	fp = popen(buffer, "r");
 	while (fgets(buffer, 127, fp) != NULL)
 	{
