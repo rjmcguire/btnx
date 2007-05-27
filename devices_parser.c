@@ -46,6 +46,7 @@ int detect_device(char *search_str)
 			found = 1;
 			sprintf(search_str, "Vendor=%04x Product=%04x", 
 				device_get_vendor(i), device_get_product(i));
+			device_set(i);
 				//devices[i][0], devices[i][1]);
 		}
 		pclose(fp);
