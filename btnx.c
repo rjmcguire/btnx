@@ -1,6 +1,6 @@
 
 /*------------------------------------------------------------------------*
- * btnx (Button extension): A program for MX and VX Revolution to reroute *
+ * btnx (Button extension): A program for rerouting                       *
  * events from the mouse as keyboard and other mouse events (or both).    *
  * Copyright (C) 2007  Olli Salonen (www.ollisalonen.com)                 *
  *                                                                        *
@@ -42,16 +42,6 @@
 #define CHAR2INT(c, x) (((int)(c)) << ((x) * 8))
 
 
-//	Unnecessary: defined in the configuration file
-#define BTNX1	0x00180100	// Thumb wheel forw
-#define BTNX2	0x001A0100	// Thumb wheel back
-#define BTNX3	0x001C0100	// Thumb wheel press
-#define BTNX4	0x00130100	// Thumb button, arrow towards user
-#define BTNX5	0x00140100	// Thumb button, arrow away from user
-#define BTNX6	0x00880000	// Search key
-#define BTNX7	0x00060001	// Wheel right
-#define BTNX8	0x000600FF	// Wheel left
-
 int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 {
 	int i=0;
@@ -72,28 +62,15 @@ int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 int btnx_event_read(int fd, int *pressed)
 {
 	int code;
-	//int tmp;
 	unsigned char buffer[INPUT_BUFFER_SIZE];
 	
 	memset(buffer, '\0', INPUT_BUFFER_SIZE);
 	if (read(fd, buffer, INPUT_BUFFER_SIZE) < 1)
 		return 0;
-	
-	/*int i=0;
-	while (i < 15)
-	{
-		printf("%04x ", CHAR2INT(buffer[i], 0) | CHAR2INT(buffer[i+1], 1));
-		i+=2;
-	}
-	putchar('\n');*/
+
 	*pressed = buffer[12];
 	
-	//if (buffer[8] == 0x02)
-	//	code = CHAR2INT(buffer[9], 3) | CHAR2INT(buffer[10], 2) | CHAR2INT(buffer[11], 1) | CHAR2INT(buffer[12], 0);
-	//else
-		code = CHAR2INT(buffer[8], 3) | CHAR2INT(buffer[11], 2) | CHAR2INT(buffer[10], 1) | CHAR2INT(buffer[13], 0);
-
-	//printf("code: %08x\n", code);
+	code = CHAR2INT(buffer[8], 3) | CHAR2INT(buffer[11], 2) | CHAR2INT(buffer[10], 1) | CHAR2INT(buffer[13], 0);
 
 	return code;
 }
@@ -174,7 +151,6 @@ int main(void)
 			{
 				if (bevs[bev_index]->type == BUTTON_IMMEDIATE)
 				{
-					//printf("immediate\n");
 					bevs[bev_index]->pressed = 1;
 					uinput_key_press(bevs[bev_index]);
 					bevs[bev_index]->pressed = 0;

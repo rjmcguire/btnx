@@ -5,18 +5,18 @@
 # Required-Stop:     $local_fs $remote_fs
 # Default-Start:     5
 # Default-Stop:      0 1 2 3 4 6
-# Short-Description: MX Revolution event rerouter daemon.
-# Description:       Captures events from the MX Revolution mouse and
-#                    reroutes them through uinput as other user defined events.
+# Short-Description: Mouse button rerouter daemon.
+# Description:       Captures events from the mouse and
+#                    reroutes them through uinput as other user-defined events.
 ### END INIT INFO
 
-# Author: Olli Salonen <mail@ollisalonen.com>
+# Author: Olli Salonen <btnx@ollisalonen.com>
 
 # Do NOT "set -e"
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
 PATH=/sbin:/usr/sbin:/bin:/usr/bin
-DESC="MX Revolution mouse event rerouter"
+DESC="Button Extension - mouse button rerouter daemon"
 NAME=btnx
 DAEMON=/usr/sbin/$NAME
 DAEMON_ARGS=""

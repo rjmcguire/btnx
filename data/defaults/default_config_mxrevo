@@ -42,8 +42,7 @@
 #	pressing the button sends a button down signal and
 #	releasing it sends a release signal. If type = 1, clicking
 #	the button send both press and release signals simultaneously.
-#	This is needed for MX Revolution's top wheel sideway clicks
-#	because the mouse does not send any button release events.
+#	This usually necessary for mouse wheel events.
 #
 #	keycode: this is the actual value of the key or button to
 #	send when the mouse button is pressed. Have a look at the
@@ -56,12 +55,13 @@
 #
 #	mod[1..3]: these are modifier key values. Examples are
 #	shift (KEY_LEFTSHIFT, KEY_RIGHTSHIFT), ctrl (KEY_LEFTCTRL, ...),
-#	etc. You can combine up to three modifier keys together with
+#	alt, etc. You can combine up to three modifier keys together with
 #	a keycode. You can even combine them with mouse button events.
 #	You do not need to specify any mod keys if you don't need to.
 #
 #	Go ahead and specify a Button section for each one of your
-#	mouse buttons.
+#	mouse buttons. Use the example configurations below as a
+#	reference.
 #-----------------------------------------------------------
 
 

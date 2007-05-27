@@ -1,16 +1,16 @@
 
 This is a list of mice that are supported by btnx. 
-The "Pending" section is for mice that will be
-added in the near future.
+The "Pending" section is for mice that have been hexdumped
+and will be supported in the near future.
 
 If you want support for your mouse, check the forum post
 below for instructions:
 	http://ubuntuforums.org/showpost.php?p=2725453&postcount=101
 -------------------------------------------------------
 
-Supported:
-	Logitech MX Revolution
-	Logitech G5
+Supported:								Hexdumping by:			Date:
+	Logitech MX Revolution				daou					May 26, 2007
+	Logitech G5							Mack1					May 27, 2007
 	
 Pending:
 

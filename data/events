@@ -1,5 +1,9 @@
 
 /*
+ * This file has been copied and modified from the Linux header file input.h
+ */
+
+/*
  * Keys and buttons
  */
 

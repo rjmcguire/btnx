@@ -26,11 +26,9 @@ int detect_device(char *search_str)
 	char buffer[DD_BUFFER_SIZE];
 	
 	while (found == 0 && !(device_get_vendor(i) == 0xFFFF && device_get_product(i) == 0xFFFF))
-		//!(devices[i][0] == 0xFFFF && devices[i][1] == 0xFFFF))
 	{
 		sprintf(buffer, "cat %s | /bin/grep -i -c \"Vendor=%04x Product=%04x\"",
 			DEVICES_FILE, device_get_vendor(i), device_get_product(i));
-			//DEVICES_FILE, devices[i][0], devices[i][1]);
 		if (!(fp = popen(buffer, "r")))
 		{
 			perror("detect_device() could not open /proc/bus/input/devices");
@@ -47,7 +45,6 @@ int detect_device(char *search_str)
 			sprintf(search_str, "Vendor=%04x Product=%04x", 
 				device_get_vendor(i), device_get_product(i));
 			device_set(i);
-				//devices[i][0], devices[i][1]);
 		}
 		pclose(fp);
 		i++;
@@ -56,13 +53,10 @@ int detect_device(char *search_str)
 	return found;
 }
 
-//int set_device(char *device_name)
-
 void devices_parser(char **mouse_event, char **kbd_event)
 {
 	FILE *fp;
 	char buffer[DP_BUFFER_SIZE];
-	//char mx_ss[64], vx_ss[64];
 	char search_str[SEARCH_STRING_SIZE];
 	int found_section=0;
 	char *found_mouse=NULL, *found_kbd=NULL;
@@ -81,8 +75,6 @@ void devices_parser(char **mouse_event, char **kbd_event)
 		exit(1);
 	}
 	
-	//sprintf(mx_ss, "Vendor=%s Product=%s", VENDOR_ID, MX_PRODUCT_ID);
-	//sprintf(vx_ss, "Vendor=%s Product=%s", VENDOR_ID, VX_PRODUCT_ID);
 	while ((fgets(buffer, DP_BUFFER_SIZE-1, fp) != NULL &&
 			!(found_mouse && found_kbd)))
 	{
