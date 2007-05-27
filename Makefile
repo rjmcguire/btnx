@@ -19,7 +19,9 @@ clean:
 	rm -f $(OBJ) $(BIN)
 
 install:
+	chmod a+rx $(SCRIPTS_DIR)/$(INSTALL)
 	$(SCRIPTS_DIR)/$(INSTALL)
 
 uninstall:
+	chmod a+rx $(SCRIPTS_DIR)/$(UNINSTALL)
 	$(SCRIPTS_DIR)/$(UNINSTALL)
