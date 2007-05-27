@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.02"
+#define PROGRAM_VERSION	"0.02.2"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -59,32 +59,42 @@ int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 	return -1;
 }
 
-int btnx_event_read(int fd, int *pressed)
+int *btnx_event_read(int fd, int *pressed)
 {
-	int code;
+	static int codes[MAX_RAWCODES];
+	int ret, i;
 	unsigned char buffer[INPUT_BUFFER_SIZE];
 	
 	memset(buffer, '\0', INPUT_BUFFER_SIZE);
-	if (read(fd, buffer, INPUT_BUFFER_SIZE) < 1)
+	if ((ret = read(fd, buffer, INPUT_BUFFER_SIZE)) < 1)
 		return 0;
+	
+	for (i=0; (i < (ret / HEXDUMP_SIZE) - 1) && (i < MAX_RAWCODES - 1); i++)
+	{
+		codes[i] = 	CHAR2INT(buffer[8 + i*HEXDUMP_SIZE], 3) | 
+					CHAR2INT(buffer[11 + i*HEXDUMP_SIZE], 2) | 
+					CHAR2INT(buffer[10 + i*HEXDUMP_SIZE], 1) | 
+					CHAR2INT(buffer[13 + i*HEXDUMP_SIZE], 0);
+	}
+	for (; i < MAX_RAWCODES; i++)
+		codes[i] = 0;
 
 	*pressed = buffer[12];
-	
-	code = CHAR2INT(buffer[8], 3) | CHAR2INT(buffer[11], 2) | CHAR2INT(buffer[10], 1) | CHAR2INT(buffer[13], 0);
 
-	return code;
+	return codes;
 }
 
 int main(void)
 {
 	int fd_ev_btn=0, fd_ev_key=-1;
 	fd_set fds;
-	int raw_code;
+	int *raw_codes;
 	int max_fd, ready;
 	int pressed=0;
 	btnx_event **bevs;
 	int bev_index;
 	char *mouse_event=NULL, *kbd_event=NULL;
+	int i;
 	
 	devices_parser(&mouse_event, &kbd_event);
 	bevs = config_parse();
@@ -136,28 +146,33 @@ int main(void)
 		else
 		{
 			if (FD_ISSET(fd_ev_btn, &fds))
-				raw_code = btnx_event_read(fd_ev_btn, &pressed);
+				raw_codes = btnx_event_read(fd_ev_btn, &pressed);
 			else if (fd_ev_key != 0)
 			{
 				if (FD_ISSET(fd_ev_key, &fds))
-					raw_code = btnx_event_read(fd_ev_key, &pressed);
+					raw_codes = btnx_event_read(fd_ev_key, &pressed);
 				else
 					continue;
 			}
 			else
 				continue;
 			
-			if ((bev_index = btnx_event_get(bevs, raw_code, pressed)) != -1)
+			for (i=0; (i < MAX_RAWCODES); i++)
 			{
-				if (bevs[bev_index]->type == BUTTON_IMMEDIATE)
+				if (raw_codes[i] == 0)
+					continue;
+				if ((bev_index = btnx_event_get(bevs, raw_codes[i], pressed)) != -1)
 				{
-					bevs[bev_index]->pressed = 1;
-					uinput_key_press(bevs[bev_index]);
-					bevs[bev_index]->pressed = 0;
-					uinput_key_press(bevs[bev_index]);
+					if (bevs[bev_index]->type == BUTTON_IMMEDIATE)
+					{
+						bevs[bev_index]->pressed = 1;
+						uinput_key_press(bevs[bev_index]);
+						bevs[bev_index]->pressed = 0;
+						uinput_key_press(bevs[bev_index]);
+					}
+					else
+						uinput_key_press(bevs[bev_index]);
 				}
-				else
-					uinput_key_press(bevs[bev_index]);
 			}
 		}
 	}

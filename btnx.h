@@ -8,6 +8,8 @@
 #define BTNX_H_
 
 #define MAX_MODS		3
+#define MAX_RAWCODES	5
+#define HEXDUMP_SIZE	16
 
 enum
 {
