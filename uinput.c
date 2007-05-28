@@ -20,6 +20,10 @@
 static int uinput_mouse_fd = -1;
 static int uinput_kbd_fd = -1;
 
+/*
+ * uinput_init() function partially derived from Micah Dowty's uinput_mouse.c
+ * <http://svn.navi.cx/misc/trunk/vision/lib/uinput_mouse.c>
+ */
 int uinput_init(const char *dev_name) 
 {
   struct uinput_user_dev dev_mouse, dev_kbd;
