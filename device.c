@@ -16,6 +16,7 @@ const device devices[] =
 	{	"mxrevo",		0x046D,		0xC51A	},	// Logitech MX Revolution
 	{	"vxrevo",		0x046D,		0xC518	},	// Logitech VX Revolution
 	{	"g5",			0x046D,		0xC041	},	// Logitech G5
+	{	"mx510",		0x046D,		0xC01D	},	// Logitech MX-510
 	{	"0",			0xFFFF,		0xFFFF	}	// Last Field MUST be 0xFFFF, 0xFFFF
 };
 
