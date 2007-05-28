@@ -99,7 +99,17 @@
 #EndButton
 
 
-# Top wheel scroll down
+# Wheel scroll up
+# NOTE: This is commented out. You probably don't want
+# to send extra events when pressing this button!
+#Button
+#rawcode	=	0x02000800
+#type 	=	1
+#keycode	=	KEY_UNKNOWN
+#EndButton
+
+
+# Wheel scroll down
 # NOTE: This is commented out. You probably don't want
 # to send extra events when pressing this button!
 #Button
@@ -109,19 +119,10 @@
 #EndButton
 
 
-# Top wheel scroll up
-# NOTE: This is commented out. You probably don't want
-# to send extra events when pressing this button!
-#Button
-#rawcode	=	0x02000800
-#type 	=	1
-#keycode	=	KEY_UNKNOWN
-#EndButton
-
 # Scroll up button
 # Does a Ctrl+Alt+Left, useful for switching workspaces.
 Button
-rawcode	=	0x01011800
+rawcode	=	0x01011600
 type 	=	0
 keycode	=	KEY_LEFT
 mod1 	=	KEY_LEFTCTRL
@@ -130,28 +131,29 @@ mod3	=	NONE
 EndButton
 
 
-# Thumb wheel press. 
+# Scroll down button
+# Does a Ctrl+Alt+Right, useful for switching workspaces.
+Button
+rawcode	=	0x01011700
+type 	=	0
+keycode	=	KEY_RIGHT
+mod1 	=	KEY_LEFTCTRL
+mod2 	=	KEY_LEFTALT
+mod3	=	NONE
+EndButton
+
+
+# Switch app button
 # Does an Alt+LeftMouseButton. Useful for dragging windows.
 Button
-rawcode	=	0x01011C00
+rawcode	=	0x01011500
 type 	=	0
 keycode =	BTN_LEFT
 mod1	=	KEY_LEFTALT
 EndButton
 
 
-# Thumb button back. 
-# Does a Ctrl+PageDown. Useful for moving through tabs 
-# (Firefox, gnome-terminal, etc.)
-Button
-rawcode	=	0x01011300
-type 	=	0
-keycode =	KEY_PAGEDOWN
-mod1	=	KEY_LEFTCTRL
-EndButton
-
-
-# Thumb button forward. 
+# Front side button
 # Does a Ctrl+PageUp. Useful for moving through tabs 
 # (Firefox, gnome-terminal, etc.)
 Button
@@ -162,31 +164,13 @@ mod1	=	KEY_LEFTCTRL
 EndButton
 
 
-# Search key. 
-# Simulates a mouse-wheel click.
+# Rear side button
+# Does a Ctrl+PageDown. Useful for moving through tabs 
+# (Firefox, gnome-terminal, etc.)
 Button
-rawcode	=	0x01008800
+rawcode	=	0x01011300
 type 	=	0
-keycode =	BTN_MIDDLE
-EndButton
-
-
-# Top wheel right. 
-# Does an Alt+Right. Ex. Firefox back
-Button
-rawcode	=	0x02000600
-type 	=	1
-keycode =	KEY_RIGHT
-mod1	=	KEY_LEFTALT
-EndButton
-
-
-# Top wheel left. 
-# Does an Alt+Left. Ex. Firefox forward
-Button
-rawcode	=	0x020006FF
-type 	=	1
-keycode =	KEY_LEFT
-mod1	=	KEY_LEFTALT
+keycode =	KEY_PAGEDOWN
+mod1	=	KEY_LEFTCTRL
 EndButton
 
