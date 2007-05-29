@@ -8,8 +8,8 @@
 #define BTNX_H_
 
 #define MAX_MODS		3
-#define MAX_RAWCODES	5
-#define HEXDUMP_SIZE	16
+#define MAX_RAWCODES	10
+#define HEXDUMP_SIZE	8
 
 enum
 {
@@ -25,5 +25,11 @@ typedef struct btnx_event
 	int mod[MAX_MODS];
 	int pressed;
 } btnx_event;
+
+typedef struct hexdump
+{
+	int rawcode;
+	int pressed;
+} hexdump;
 
 #endif /*BTNX_H_*/

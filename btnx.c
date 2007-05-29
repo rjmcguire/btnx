@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.2.4"
+#define PROGRAM_VERSION	"0.2.5"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -59,9 +59,9 @@ int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 	return -1;
 }
 
-int *btnx_event_read(int fd, int *pressed)
+hexdump *btnx_event_read(int fd)
 {
-	static int codes[MAX_RAWCODES];
+	static hexdump codes[MAX_RAWCODES];
 	int ret, i;
 	unsigned char buffer[INPUT_BUFFER_SIZE];
 	
@@ -71,15 +71,17 @@ int *btnx_event_read(int fd, int *pressed)
 	
 	for (i=0; (i < (ret / HEXDUMP_SIZE) - 1) && (i < MAX_RAWCODES - 1); i++)
 	{
-		codes[i] = 	CHAR2INT(buffer[8 + i*HEXDUMP_SIZE], 3) | 
-					CHAR2INT(buffer[11 + i*HEXDUMP_SIZE], 2) | 
-					CHAR2INT(buffer[10 + i*HEXDUMP_SIZE], 1) | 
-					CHAR2INT(buffer[13 + i*HEXDUMP_SIZE], 0);
+		codes[i].rawcode = 	CHAR2INT(buffer[0 + i*HEXDUMP_SIZE], 3) | 
+							CHAR2INT(buffer[3 + i*HEXDUMP_SIZE], 2) | 
+							CHAR2INT(buffer[2 + i*HEXDUMP_SIZE], 1) | 
+							CHAR2INT(buffer[5 + i*HEXDUMP_SIZE], 0);
+		codes[i].pressed =	buffer[4+i*HEXDUMP_SIZE];
 	}
 	for (; i < MAX_RAWCODES; i++)
-		codes[i] = 0;
-
-	*pressed = buffer[12];
+	{
+		codes[i].rawcode = 0;
+		codes[i].pressed = 0;
+	}
 
 	return codes;
 }
@@ -88,9 +90,8 @@ int main(void)
 {
 	int fd_ev_btn=0, fd_ev_key=-1;
 	fd_set fds;
-	int *raw_codes;
+	hexdump *raw_codes;
 	int max_fd, ready;
-	int pressed=0;
 	btnx_event **bevs;
 	int bev_index;
 	char *mouse_event=NULL, *kbd_event=NULL;
@@ -146,11 +147,11 @@ int main(void)
 		else
 		{
 			if (FD_ISSET(fd_ev_btn, &fds))
-				raw_codes = btnx_event_read(fd_ev_btn, &pressed);
+				raw_codes = btnx_event_read(fd_ev_btn);
 			else if (fd_ev_key != 0)
 			{
 				if (FD_ISSET(fd_ev_key, &fds))
-					raw_codes = btnx_event_read(fd_ev_key, &pressed);
+					raw_codes = btnx_event_read(fd_ev_key);
 				else
 					continue;
 			}
@@ -159,9 +160,9 @@ int main(void)
 			
 			for (i=0; (i < MAX_RAWCODES); i++)
 			{
-				if (raw_codes[i] == 0)
+				if (raw_codes[i].rawcode == 0)
 					continue;
-				if ((bev_index = btnx_event_get(bevs, raw_codes[i], pressed)) != -1)
+				if ((bev_index = btnx_event_get(bevs, raw_codes[i].rawcode, raw_codes[i].pressed)) != -1)
 				{
 					if (bevs[bev_index]->type == BUTTON_IMMEDIATE)
 					{

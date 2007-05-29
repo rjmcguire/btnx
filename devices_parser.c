@@ -114,7 +114,7 @@ void devices_parser(char **mouse_event, char **kbd_event)
 		exit(1);
 	}
 	if (found_kbd == NULL || kbd_event == NULL)
-		fprintf(stderr, "Did not find additional event handlers.\n");
+		fprintf(stderr, "Did not find additional event handlers. No problem.\n");
 		
 	fclose(fp);
 }
