@@ -138,9 +138,11 @@ char *get_event(char *loc_beg, char *event)
 	while (!isspace(*loc_end) && *loc_end != '\0') loc_end++;
 	*loc_end = '\0';
 	
-	event = (char *) malloc((strlen(loc_beg)+strlen(EVENT_LOCATION)+1)*sizeof(char));
-	strcpy(event, EVENT_LOCATION);
-	strcat(event, loc_beg);
+	event = (char *) malloc((strlen(loc_beg)+1)*sizeof(char));
+	strcpy(event, loc_beg);
+	//event = (char *) malloc((strlen(loc_beg)+strlen(EVENT_LOCATION)+1)*sizeof(char));
+	//strcpy(event, EVENT_LOCATION);
+	//strcat(event, loc_beg);
 	return event;
 }
 

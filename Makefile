@@ -7,7 +7,9 @@ OBJ = btnx.o uinput.o config_parser.o devices_parser.o device.o
 BIN = btnx
 SCRIPTS_DIR = ./scripts
 INSTALL = install.sh
+INSTALL_GENERIC = install-generic.sh
 UNINSTALL = uninstall.sh
+UINSTALL_GENERIC = uninstall-generic.sh
 
 %.o: %.c $(DEPS)
 	$(CC) $< $(CFLAGS) -c -o $@
@@ -25,3 +27,11 @@ install:
 uninstall:
 	chmod a+rx $(SCRIPTS_DIR)/$(UNINSTALL)
 	$(SCRIPTS_DIR)/$(UNINSTALL)
+	
+install-generic:
+	chmod a+rx $(SCRIPTS_DIR)/$(INSTALL_GENERIC)
+	$(SCRIPTS_DIR)/$(INSTALL_GENERIC)
+
+uninstall:
+	chmod a+rx $(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)
+	$(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)

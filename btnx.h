@@ -39,4 +39,6 @@ typedef struct hexdump
 	int pressed;
 } hexdump;
 
+int open_handler(char *name, int flags);
+
 #endif /*BTNX_H_*/

@@ -42,6 +42,41 @@
 #define INPUT_BUFFER_SIZE	512
 #define CHAR2INT(c, x) (((int)(c)) << ((x) * 8))
 
+#define NUM_HANDLER_LOCATIONS	3
+
+const char handler_locations[][15] =
+{
+	{"/dev"},
+	{"/dev/input"},
+	{"/dev/misc"}
+};
+
+const char *get_handler_location(int index)
+{
+	if (index < 0 || index > NUM_HANDLER_LOCATIONS - 1)
+		return NULL;
+	
+	return handler_locations[index];
+}
+
+int open_handler(char *name, int flags)
+{
+	const char *loc;
+	int x=0, fd;
+	char loc_buffer[128];
+	
+	while ((loc = get_handler_location(x++)) != NULL)
+	{
+		sprintf(loc_buffer, "%s/%s", loc, name);
+		if ((fd = open(loc_buffer, flags)) >= 0)
+		{
+			printf("Opened handler: %s\n", loc_buffer);
+			return fd;
+		}
+	}
+	
+	return -1;
+}
 
 int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 {
@@ -120,16 +155,16 @@ int main(void)
 		exit(1);
 	}
 	
-	fd_ev_btn = open(mouse_event, O_RDONLY);
+	fd_ev_btn = open_handler(mouse_event, O_RDONLY);	//open(mouse_event, O_RDONLY);
 	if (fd_ev_btn < 0)
 	{
-		fprintf(stderr, "Error opening button event file descriptor\"%s\": %s", 
+		fprintf(stderr, "Error opening button event file descriptor\"%s\": %s\n", 
 				mouse_event, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	if (kbd_event != NULL)
 	{
-		fd_ev_key = open(kbd_event, O_RDONLY);
+		fd_ev_key = open_handler(kbd_event, O_RDONLY);	//open(kbd_event, O_RDONLY);
 		if (fd_ev_key < 0)
 		{
 			perror("Error opening key event file descriptor");
@@ -153,7 +188,7 @@ int main(void)
 		if (fd_ev_key != -1)
 			FD_SET(fd_ev_key, &fds);
 	
-		ready = select(max_fd+1, &fds, NULL, NULL, NULL);
+		ready = select(max_fd+1, &fds, NULL, NULL, NULL);		
 		
 		if (ready == -1)
 			perror("select() error");

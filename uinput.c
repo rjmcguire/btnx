@@ -29,13 +29,13 @@ int uinput_init(const char *dev_name)
   struct uinput_user_dev dev_mouse, dev_kbd;
   int i;
 
-  uinput_mouse_fd = open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
+  uinput_mouse_fd = open_handler("uinput", O_WRONLY | O_NDELAY);	//open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
   if (uinput_mouse_fd < 0) 
   {
     perror("Error opening the uinput device.\nMake sure you have loaded the uinput module (modprobe uinput)");
     exit(EXIT_FAILURE);
   }
-  uinput_kbd_fd = open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
+  uinput_kbd_fd = open_handler("uinput", O_WRONLY | O_NDELAY);	//open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
   if (uinput_kbd_fd < 0) 
   {
     perror("Error opening the uinput device");

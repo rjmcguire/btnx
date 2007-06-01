@@ -38,11 +38,13 @@
 #	32-bit base16 (hexadecimal) value preceded by "0x". You
 #	probably should not change this value at all.
 #
-#	type: the type of event the button sends. If type is 0,
-#	pressing the button sends a button down signal and
-#	releasing it sends a release signal. If type = 1, clicking
-#	the button send both press and release signals simultaneously.
-#	This usually necessary for mouse wheel events.
+#	type: the type of event the button sends.
+#	(Preset for your specific mouse buttons.)
+#	If pressing the button sends a button press signal and
+#	releasing it sends a release signal, the type is 0.
+#	If pressing the button sends both press and release signals
+#	simultaneously, the type is 1.
+#	-This is usually necessary for mouse wheel events.
 #
 #	keycode: this is the actual value of the key or button to
 #	send when the mouse button is pressed. Have a look at the
@@ -52,6 +54,8 @@
 #	keyboard events and the events beginning with BTN_ are for
 #	simulating mouse button events. Not all of them are handled by
 #	X. You must use the string describing the event! Not the number.
+#		-Special note: REL_WHEELFORWARD and REL_WHEELBACK are for
+#		sending mouse wheel scroll events.
 #
 #	mod[1..3]: these are modifier key values. Examples are
 #	shift (KEY_LEFTSHIFT, KEY_RIGHTSHIFT), ctrl (KEY_LEFTCTRL, ...),
