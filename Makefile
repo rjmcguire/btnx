@@ -9,7 +9,7 @@ SCRIPTS_DIR = ./scripts
 INSTALL = install.sh
 INSTALL_GENERIC = install-generic.sh
 UNINSTALL = uninstall.sh
-UINSTALL_GENERIC = uninstall-generic.sh
+UNINSTALL_GENERIC = uninstall-generic.sh
 
 %.o: %.c $(DEPS)
 	$(CC) $< $(CFLAGS) -c -o $@
