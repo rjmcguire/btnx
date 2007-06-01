@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.2.5"
+#define PROGRAM_VERSION	"0.2.6"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,6 +32,7 @@
 #include <sys/select.h>
 #include <sys/time.h>
 #include <linux/input.h>
+#include <errno.h>
 
 #include "uinput.h"
 #include "btnx.h"
@@ -86,6 +87,18 @@ hexdump *btnx_event_read(int fd)
 	return codes;
 }
 
+void send_extra_event(btnx_event **bevs, int index)
+{
+	int tmp_kc = bevs[index]->keycode;
+	
+	bevs[index]->pressed = 1;
+	uinput_key_press(bevs[index]);
+	bevs[index]->pressed = 0;
+	bevs[index]->keycode = KEY_UNKNOWN;
+	uinput_key_press(bevs[index]);
+	bevs[index]->keycode = tmp_kc;
+}
+
 int main(void)
 {
 	int fd_ev_btn=0, fd_ev_key=-1;
@@ -96,6 +109,7 @@ int main(void)
 	int bev_index;
 	char *mouse_event=NULL, *kbd_event=NULL;
 	int i;
+	int suppress_release=1;
 	
 	devices_parser(&mouse_event, &kbd_event);
 	bevs = config_parse();
@@ -109,7 +123,8 @@ int main(void)
 	fd_ev_btn = open(mouse_event, O_RDONLY);
 	if (fd_ev_btn < 0)
 	{
-		perror("Error opening button event file descriptor");
+		fprintf(stderr, "Error opening button event file descriptor\"%s\": %s", 
+				mouse_event, strerror(errno));
 		exit(EXIT_FAILURE);
 	}
 	if (kbd_event != NULL)
@@ -164,12 +179,23 @@ int main(void)
 					continue;
 				if ((bev_index = btnx_event_get(bevs, raw_codes[i].rawcode, raw_codes[i].pressed)) != -1)
 				{
-					if (bevs[bev_index]->type == BUTTON_IMMEDIATE)
+					if (bevs[bev_index]->type == BUTTON_IMMEDIATE && 
+						bevs[bev_index]->keycode < BTNX_EXTRA_EVENTS)
 					{
 						bevs[bev_index]->pressed = 1;
 						uinput_key_press(bevs[bev_index]);
 						bevs[bev_index]->pressed = 0;
 						uinput_key_press(bevs[bev_index]);
+					}
+					else if (bevs[bev_index]->keycode > BTNX_EXTRA_EVENTS)
+					{
+						if (bevs[bev_index]->type == BUTTON_NORMAL)
+						{
+							if ((suppress_release = !suppress_release) != 1)
+								send_extra_event(bevs, bev_index);
+						}
+						else if (bevs[bev_index]->type == BUTTON_IMMEDIATE)
+							send_extra_event(bevs, bev_index);
 					}
 					else
 						uinput_key_press(bevs[bev_index]);

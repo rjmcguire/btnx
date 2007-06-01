@@ -45,6 +45,7 @@ int detect_device(char *search_str)
 			sprintf(search_str, "Vendor=%04x Product=%04x", 
 				device_get_vendor(i), device_get_product(i));
 			device_set(i);
+			printf("Detected mouse: %s\t%s\n", device_get_name(i), search_str);
 		}
 		pclose(fp);
 		i++;
@@ -65,7 +66,9 @@ void devices_parser(char **mouse_event, char **kbd_event)
 	
 	if (detect_device(search_str) == 0)
 	{
-		fprintf(stderr, "No supported mice detected. You can make a support request for your mouse\n");
+		fprintf(stderr, "Error: no supported mice detected.\n\
+You can make a support request for your mouse at \n\
+http://ubuntuforums.org/showthread.php?t=455656\n");
 		exit(1);
 	}
 	
@@ -108,13 +111,16 @@ void devices_parser(char **mouse_event, char **kbd_event)
 		}
 	}
 	
-	if (found_mouse == NULL || mouse_event == NULL)
+	if (found_mouse == NULL || *mouse_event == NULL)
 	{
 		fprintf(stderr, "Error: could not parse mouse event handlers\n.");
 		exit(1);
 	}
-	if (found_kbd == NULL || kbd_event == NULL)
+	if (found_kbd == NULL || *kbd_event == NULL)
 		fprintf(stderr, "Did not find additional event handlers. No problem.\n");
+		
+	printf("Device and event handler detection complete.\n\
+-Using event: %s\n", *mouse_event);
 		
 	fclose(fp);
 }

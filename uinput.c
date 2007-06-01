@@ -53,6 +53,7 @@ int uinput_init(const char *dev_name)
   ioctl(uinput_mouse_fd, UI_SET_EVBIT, EV_REL);
   ioctl(uinput_mouse_fd, UI_SET_RELBIT, REL_X);
   ioctl(uinput_mouse_fd, UI_SET_RELBIT, REL_Y);
+  ioctl(uinput_mouse_fd, UI_SET_RELBIT, REL_WHEEL);
   ioctl(uinput_mouse_fd, UI_SET_EVBIT, EV_KEY);
   
   for (i=BTN_MISC; i<KEY_OK; i++)
@@ -88,7 +89,7 @@ void uinput_key_press(struct btnx_event *bev)
 		return;
 	}
 	
-	if (bev->keycode <= KEY_UNKNOWN || bev->keycode >= KEY_OK)
+	if ((bev->keycode <= KEY_UNKNOWN || bev->keycode >= KEY_OK) && bev->keycode < BTNX_EXTRA_EVENTS)
 		fd = uinput_kbd_fd;
 	else
 		fd = uinput_mouse_fd;
@@ -113,10 +114,26 @@ void uinput_key_press(struct btnx_event *bev)
   		usleep(10);	// Needs a little delay for mouse + modifier combo
 	}
 	
-	event.type = EV_KEY;
-	event.code = bev->keycode;
-	event.value = bev->pressed;
-	write(fd, &event, sizeof(event));
+	if (bev->keycode > BTNX_EXTRA_EVENTS)
+	{
+		event.type = EV_REL;
+		
+		if (bev->keycode == REL_WHEELFORWARD || bev->keycode == REL_WHEELBACK)
+			event.code = REL_WHEEL;
+		
+		if (bev->keycode == REL_WHEELFORWARD)
+			event.value = 1;
+		else if (bev->keycode == REL_WHEELBACK)
+			event.value = -1;
+		write(fd, &event, sizeof(event));
+	}
+	else
+	{
+		event.type = EV_KEY;
+		event.code = bev->keycode;
+		event.value = bev->pressed;
+		write(fd, &event, sizeof(event));
+	}
 	
 	event.type = EV_SYN;
   	event.code = SYN_REPORT;

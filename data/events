@@ -443,3 +443,7 @@ KEY_BRL_DOT8		0x1f8
 /* We avoid low common keys in module aliases so they don't get huge. */
 KEY_MIN_INTERESTING	KEY_MUTE
 KEY_MAX			0x1ff
+
+/* Mouse wheel */
+REL_WHEELFORWARD	0x08
+REL_WHEELBACK		0x08

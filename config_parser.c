@@ -162,6 +162,11 @@ char *config_add_value(btnx_event *e, char *option, char *value)
 		e->type = strtol(value, NULL, 10);
 		return option;
 	}
+	/*if (!strcasecmp(option, "value"))
+	{
+		e->value = strtol(value, NULL, 10);
+		return option;
+	}*/
 	if (!strcasecmp(option, "keycode"))
 	{
 		e->keycode = config_get_keycode(value);
@@ -217,6 +222,11 @@ int config_get_keycode(const char *value)
 	
 	if (!strcasecmp(value, "none"))
 		return 0;
+	
+	if (!strcasecmp(value, "REL_WHEELFORWARD"))
+		return REL_WHEELFORWARD;
+	else if (!strcasecmp(value, "REL_WHEELBACK"))
+		return REL_WHEELBACK;
 	
 	sprintf(buffer, "cat %s/%s | /bin/grep %s", CONFIG_PATH, EVENTS_NAME, value);
 	fp = popen(buffer, "r");
