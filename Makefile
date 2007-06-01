@@ -32,6 +32,6 @@ install-generic:
 	chmod a+rx $(SCRIPTS_DIR)/$(INSTALL_GENERIC)
 	$(SCRIPTS_DIR)/$(INSTALL_GENERIC)
 
-uninstall:
+uninstall-generic:
 	chmod a+rx $(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)
 	$(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)
