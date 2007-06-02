@@ -29,6 +29,12 @@ want for certain mouse buttons. The /etc/btnx/events file contains all
 the possible keyboard and mouse events you can send. The btnx_config
 file should have plenty of instructions for editing button 
 configurations.
-After changing the config file, make sure to restart btnx by running:
-	$ sudo /etc/init.d/btnx restart
+After changing the config file, make sure to restart btnx by running
+(only in Ubuntu):
 
+$ sudo /etc/init.d/btnx restart
+
+For questions|problems|comments go to the btnx thread at the Ubuntu
+forums:
+
+http://ubuntuforums.org/showthread.php?t=455656
