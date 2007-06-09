@@ -135,7 +135,7 @@ EndButton
 
 
 # Mouse wheel right. 
-# Does an Alt+Right. Ex. Firefox back
+# Does an Alt+Right. Ex. Firefox forward
 Button
 rawcode =	0x02000600
 type 	=	1
@@ -145,7 +145,7 @@ EndButton
 
 
 # Mouse wheel left. 
-# Does an Alt+Left. Ex. Firefox forward
+# Does an Alt+Left. Ex. Firefox back
 Button
 rawcode =	0x020006FF
 type 	=	1

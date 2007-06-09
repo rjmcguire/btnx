@@ -1,6 +1,6 @@
 
 #----------------------------------------------------------
-# 	Logitech VX Revolution btnx configuration file
+# 	Logitech MX-1000 btnx configuration file
 #----------------------------------------------------------
 #
 ###########################################################
@@ -70,7 +70,7 @@
 
 
 
-# These buttons are configured for the VX Revolution mouse.
+# These buttons are configured for the MX-1000 mouse.
 #-----------------------------------------------------------
 
 # Left mouse button
@@ -92,6 +92,7 @@
 #keycode	=	KEY_UNKNOWN
 #EndButton
 
+
 # Mouse wheel press
 # NOTE: This is commented out. You probably don't want
 # to send extra events when pressing this button!
@@ -101,7 +102,8 @@
 #keycode	=	KEY_UNKNOWN
 #EndButton
 
-# Mouse wheel scroll down
+
+# Wheel scroll down
 # NOTE: This is commented out. You probably don't want
 # to send extra events when pressing this button!
 #Button
@@ -111,7 +113,7 @@
 #EndButton
 
 
-# Mouse wheel scroll up
+# Wheel scroll up
 # NOTE: This is commented out. You probably don't want
 # to send extra events when pressing this button!
 #Button
@@ -120,10 +122,78 @@
 #keycode	=	KEY_UNKNOWN
 #EndButton
 
-# Zoom+ 
-# Does a Ctrl+Alt+Left, useful for switching workspaces.
+
+# Wheel tilt left
+# NOTE: Functionality not guaranteed
+#Button
+#rawcode	=	0x020006FF
+#type 	=	1
+#keycode	=	KEY_UNKNOWN
+#EndButton
+
+
+# Wheel tilt right
+# NOTE: Functionality not guaranteed
+#Button
+#rawcode	=	0x02000600
+#type 	=	1
+#keycode	=	KEY_UNKNOWN
+#EndButton
+
+
+# Middle button rear
+# Decreases system volume
+Button
+rawcode	=	0x01011700
+type 	=	0
+keycode =	KEY_VOLUMEDOWN
+EndButton
+
+
+# Middle button front
+# Increases system volume
+Button
+rawcode	=	0x01011600
+type 	=	0
+keycode =	KEY_VOLUMEUP
+EndButton
+
+
+# Middle button left
+# Does an Alt+Left. Ex. Firefox forward
 Button
 rawcode	=	0x01011800
+type 	=	0
+keycode =	KEY_LEFT
+mod1	=	KEY_LEFTALT
+EndButton
+
+
+# Middle button right
+# Does an Alt+Right. Ex. Firefox back
+Button
+rawcode	=	0x01011900
+type 	=	0
+keycode =	KEY_RIGHT
+mod1	=	KEY_LEFTALT
+EndButton
+
+
+# Thumb button rear. 
+# Does a Ctrl+Alt+Right, useful for switching workspaces.
+Button
+rawcode	=	0x01011300
+type 	=	0
+keycode =	KEY_RIGHT
+mod1	=	KEY_LEFTCTRL
+mod2	=	KEY_LEFTALT
+EndButton
+
+
+# Thumb button front. 
+# Does a Ctrl+Alt+Left, useful for switching workspaces.
+Button
+rawcode	=	0x01011400
 type 	=	0
 keycode	=	KEY_LEFT
 mod1 	=	KEY_LEFTCTRL
@@ -131,64 +201,15 @@ mod2 	=	KEY_LEFTALT
 mod3	=	NONE
 EndButton
 
-# Zoom-
-# Does a Ctrl+Alt+Left, useful for switching workspaces.
+
+# Thumb button middle
+# Does an Alt+LeftMouseButton. Useful for dragging windows.
 Button
-rawcode	=	0x01011900
+rawcode	=	0x01011500
 type 	=	0
-keycode	=	KEY_RIGHT
-mod1 	=	KEY_LEFTCTRL
-mod2 	=	KEY_LEFTALT
-mod3	=	NONE
-EndButton
-
-
-# Thumb button back. 
-# Does a Ctrl+PageDown. Useful for moving through tabs 
-# (Firefox, gnome-terminal, etc.)
-Button
-rawcode	=	0x01011300
-type 	=	0
-keycode =	KEY_PAGEDOWN
-mod1	=	KEY_LEFTCTRL
-EndButton
-
-
-# Thumb button forward. 
-# Does a Ctrl+PageUp. Useful for moving through tabs 
-# (Firefox, gnome-terminal, etc.)
-Button
-rawcode	=	0x01011400
-type 	=	0
-keycode =	KEY_PAGEUP
-mod1	=	KEY_LEFTCTRL
-EndButton
-
-
-# Search key. 
-Button
-rawcode	=	0x01008800
-type 	=	0
-keycode =	KEY_F5
-EndButton
-
-
-# Top wheel right. 
-# Does an Alt+Right. Ex. Firefox forward
-Button
-rawcode	=	0x02000600
-type 	=	1
-keycode =	KEY_RIGHT
+keycode =	BTN_LEFT
 mod1	=	KEY_LEFTALT
 EndButton
 
 
-# Top wheel left. 
-# Does an Alt+Left. Ex. Firefox back
-Button
-rawcode	=	0x020006FF
-type 	=	1
-keycode =	KEY_LEFT
-mod1	=	KEY_LEFTALT
-EndButton
 

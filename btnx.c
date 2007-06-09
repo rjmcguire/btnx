@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.2.6"
+#define PROGRAM_VERSION	"0.2.7"
 
 #include <stdlib.h>
 #include <stdio.h>

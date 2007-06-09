@@ -1,8 +1,8 @@
 
 Installation instructions:
--NOTE! If you are upgrading your btnx,
-make a backup of your /etc/btnx/btnx_config
-file first.
+If you are upgrading your btnx, you don't have
+to uninstall first. Installation will make a
+backup of your previous configuration file.
 
 -------------------------------------
 Ubuntu (possibly Debian as well):

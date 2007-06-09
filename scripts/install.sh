@@ -18,6 +18,20 @@ CONFIG_DIR=/etc/btnx
 CONFIG=btnx_config
 EVENTS=events
 
+
+function prompt_yn {
+	while [ 1 ]; do
+	  echo -n " (y or n)? : "
+	  read CONFIRM
+	  case $CONFIRM in
+	    y|Y|YES|yes|Yes) return 1 ;;
+	    n|N|no|NO|No) return 0 ;;
+	    *) echo "Invalid option"
+	  esac
+	done
+}
+
+
 echo -ne "Installing..."
 
 # Check for config dir. Create if nonexistent.
@@ -52,7 +66,26 @@ echo -ne "."
 
 # Make sure an old config file isn't installed. Won't
 # copy the correct default config otherwise on first run.
-[ -f $CONFIG_DIR/$CONFIG ] && rm $CONFIG_DIR/$CONFIG
+# Create a backup of the old one.
+CONFIG_BAK=$CONFIG.bak
+CONFIG_INDEX=1
+if [ -f $CONFIG_DIR/$CONFIG ]; then
+	echo "Detected a previous btnx_config file."
+	echo -ne "Keep old configuration file "
+	prompt_yn
+	if [ $? -ne 1 ]; then
+		while [ -f $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX} ]; do
+			CONFIG_INDEX=`expr $CONFIG_INDEX + 1`
+		done
+		mv $CONFIG_DIR/$CONFIG $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}
+		if [ $? -ne 0 ]; then
+			echo "Error: could not backup old config file."
+			exit 1
+		fi
+		echo ""
+		echo "Backed up old configuration file to $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}"
+	fi
+fi
 
 # Make sure a previous btnx daemon is not running
 if [ -f $INIT_DIR/$NAME ]; then

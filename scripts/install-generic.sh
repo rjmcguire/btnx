@@ -53,7 +53,21 @@ echo -ne "."
 
 # Make sure an old config file isn't installed. Won't
 # copy the correct default config otherwise on first run.
-[ -f $CONFIG_DIR/$CONFIG ] && rm $CONFIG_DIR/$CONFIG
+# Create a backup of the old one.
+CONFIG_BAK=$CONFIG.bak
+CONFIG_INDEX=1
+if [ -f $CONFIG_DIR/$CONFIG ]; then
+	while [ -f $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX} ]; do
+		CONFIG_INDEX=`expr $CONFIG_INDEX + 1`
+	done
+	mv $CONFIG_DIR/$CONFIG $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}
+	if [ $? -ne 0 ]; then
+		echo "Error: could not backup old config file."
+		exit 1
+	fi
+	echo ""
+	echo "Backed up old configuration file to $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}"
+fi
 
 # Make sure a previous btnx daemon is not running
 #if [ -f $INIT_DIR/$NAME ]; then
