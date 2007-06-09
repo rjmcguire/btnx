@@ -19,6 +19,20 @@ CONFIG_DIR=/etc/btnx
 CONFIG=btnx_config
 EVENTS=events
 
+
+function prompt_yn {
+	while [ 1 ]; do
+	  echo -n " (y or n)? : "
+	  read CONFIRM
+	  case $CONFIRM in
+	    y|Y|YES|yes|Yes) return 1 ;;
+	    n|N|no|NO|No) return 0 ;;
+	    *) echo "Invalid option"
+	  esac
+	done
+}
+
+
 echo -ne "Installing..."
 
 # Check for config dir. Create if nonexistent.
@@ -57,16 +71,21 @@ echo -ne "."
 CONFIG_BAK=$CONFIG.bak
 CONFIG_INDEX=1
 if [ -f $CONFIG_DIR/$CONFIG ]; then
-	while [ -f $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX} ]; do
-		CONFIG_INDEX=`expr $CONFIG_INDEX + 1`
-	done
-	mv $CONFIG_DIR/$CONFIG $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}
-	if [ $? -ne 0 ]; then
-		echo "Error: could not backup old config file."
-		exit 1
+	echo "Detected a previous btnx_config file."
+	echo -ne "Keep old configuration file "
+	prompt_yn
+	if [ $? -ne 1 ]; then
+		while [ -f $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX} ]; do
+			CONFIG_INDEX=`expr $CONFIG_INDEX + 1`
+		done
+		mv $CONFIG_DIR/$CONFIG $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}
+		if [ $? -ne 0 ]; then
+			echo "Error: could not backup old config file."
+			exit 1
+		fi
+		echo ""
+		echo "Backed up old configuration file to $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}"
 	fi
-	echo ""
-	echo "Backed up old configuration file to $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}"
 fi
 
 # Make sure a previous btnx daemon is not running
@@ -77,16 +96,16 @@ fi
 
 # Copy the binary file to the binary directory.
 #echo -ne "Installing binary files... "
-cp $NAME $BIN_DIR
-if [ $? -ne 0 ]; then
-	echo "Error: could not copy $NAME to $BIN_DIR."
-	exit 1
-fi
-echo -ne "."
+#cp $NAME $BIN_DIR
+#if [ $? -ne 0 ]; then
+#	echo "Error: could not copy $NAME to $BIN_DIR."
+#	exit 1
+#fi
+#echo -ne "."
 
 # Make sure only root has execution privs for program
-chown root $PROGRAM
-chmod 0744 $PROGRAM
+#chown root $PROGRAM
+#chmod 0744 $PROGRAM
 
 echo -ne "."
 
