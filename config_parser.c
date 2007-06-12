@@ -187,6 +187,20 @@ char *config_add_value(btnx_event *e, char *option, char *value)
 		config_add_mod(e, config_get_keycode(value));
 		return option;
 	}
+	if (!strcasecmp(option, "command"))
+	{
+		config_set_command(e, value);
+		return option;
+	}
+	if (!strcasecmp(option, "uid"))
+	{
+		e->uid = strtol(value, NULL, 10);
+		return option;
+	}
+	if (!strcasecmp(option, "name"))
+	{
+		return option;
+	}
 	
 	return NULL;
 }
@@ -245,6 +259,91 @@ int config_get_keycode(const char *value)
 	pclose(fp);
 	
 	return 0;
+}
+
+char **config_split_command(char *cmd)
+{
+	char *beg, *end, closing;
+	int stop=0, i=0, enclosed=0;
+	char **args=NULL;
+	
+	if (cmd == NULL)
+		return NULL;
+	args = (char **) malloc(sizeof(char*));
+	if (args == NULL)
+		return NULL;
+	args[0] = NULL;
+	
+	beg = cmd;
+	
+	while (1)
+	{
+		while (*beg == '\t' || (*beg == ' ' && *(beg-1) != '\\')) beg++;
+		if (*beg == '\0') break;
+		end = beg;
+		
+		while (	(*end != '\0' && *end != '\t' && *end != ' ') ||
+				(*end == ' ' && *(end-1) == '\\') ||
+				(*end == ' ' && enclosed))
+		{
+			if (IS_ENCLOSING(*end) && enclosed == 0)
+			{
+				closing = *end;
+				enclosed = 1;
+			}
+			else if (IS_ENCLOSING(*end) && enclosed == 1)
+			{
+				if (closing == *end)
+					enclosed = 0;
+			}
+			end++;
+		}
+		if (*end == '\0') stop = 1;
+		*end = '\0';
+		
+		i++;
+		args = (char **) realloc(args, (i+1) * sizeof(char*));
+		args[i-1] = beg; args[i] = NULL;
+		
+		if (stop)
+			break;
+		beg = end + 1;
+	}
+	
+	if (i < 1)
+	{
+		fprintf(stderr, "Error: invalid arguments for command execution configuration option.\n");
+		fprintf(stderr, "You must specify at least one items: /path/to/executable_name");
+		fprintf(stderr, "Example: /usr/bin/gedit\n");
+		fprintf(stderr, "Then append optional arguments: /usr/bin/gedit --new-window /etc/btnx/btnx_config\n");
+		
+		return NULL;
+	}
+	
+	return args;
+}
+
+char *config_set_command(btnx_event *e, char *value)
+{
+	e->command = (char *) malloc((strlen(value) + 1)*sizeof(char));
+	
+	if (e->command == NULL)
+	{
+		fprintf(stderr, "Error: could not allocate command: %s\n", strerror(errno));
+		return NULL;
+	}
+	e->keycode = COMMAND_EXECUTE;
+	strcpy(e->command, value);
+	
+	e->args = config_split_command(e->command);
+	if (e->args == NULL)
+	{
+		fprintf(stderr, "Fatal error in config_split_command. Exiting...\n");
+		exit(1);
+	}
+	
+	return e->command;
+	
 }
 
 

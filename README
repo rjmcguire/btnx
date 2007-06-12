@@ -14,7 +14,8 @@ mice in the SUPPORTED_MICE file.
 btnx is a daemon that sniffs events from the mouse event handler.
 If it recognizes a configured event, it sends a keyboard and/or mouse
 combination event to uinput. This means you can configure certain
-mouse buttons to send keyboard and mouse events to X.
+mouse buttons to send keyboard and mouse events to X. Version 0.2.8
+adds support for sending command executions.
 
 It is useful for mice with more buttons than window managers can
 handle. It also means you won't need to manually edit your window

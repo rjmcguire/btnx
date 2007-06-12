@@ -62,6 +62,7 @@ int uinput_init(const char *dev_name)
   }
    
   ioctl(uinput_kbd_fd, UI_SET_EVBIT, EV_KEY);
+  ioctl(uinput_kbd_fd, UI_SET_EVBIT, EV_REP);
   for (i=0; i<BTN_MISC; i++)
   {
   	ioctl(uinput_kbd_fd, UI_SET_KEYBIT, i);
@@ -73,7 +74,7 @@ int uinput_init(const char *dev_name)
   
   ioctl(uinput_kbd_fd, UI_DEV_CREATE, 0);
   ioctl(uinput_mouse_fd, UI_DEV_CREATE, 0);
-  
+
   return 0;
 }
 
@@ -140,4 +141,5 @@ void uinput_key_press(struct btnx_event *bev)
   	event.value = 0;
   	write(fd, &event, sizeof(event));
 }
+
 

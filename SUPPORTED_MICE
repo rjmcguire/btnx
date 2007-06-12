@@ -5,7 +5,7 @@ and will be supported in the near future.
 
 If you want support for your mouse, check the forum post
 below for instructions:
-	http://ubuntuforums.org/showpost.php?p=2725453&postcount=101
+	http://ubuntuforums.org/showpost.php?p=2727025&postcount=1
 -------------------------------------------------------
 
 Supported:                              Hexdumping by:          Date:
@@ -15,6 +15,7 @@ Supported:                              Hexdumping by:          Date:
     Logitech MX-510                     sjust                   May 28, 2007
     Logitech MX-600                     blazoner                June 1, 2007
     Logitech MX-1000                    tim71                   June 9, 2007 <-- autoconfigure not supported
+    MS IntelliMouse Explorer 3 USB      tweak                   June 12, 2007
 	
 Pending:
 

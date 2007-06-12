@@ -15,7 +15,8 @@ enum
 {
 	BTNX_EXTRA_EVENTS=0xFFF0,
 	REL_WHEELFORWARD,
-	REL_WHEELBACK
+	REL_WHEELBACK,
+	COMMAND_EXECUTE
 };
 
 enum
@@ -31,6 +32,9 @@ typedef struct btnx_event
 	int keycode;
 	int mod[MAX_MODS];
 	int pressed;
+	char *command;
+	char **args;
+	int uid;
 } btnx_event;
 
 typedef struct hexdump

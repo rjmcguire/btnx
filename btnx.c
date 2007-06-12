@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.2.7"
+#define PROGRAM_VERSION	"0.2.8"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -31,6 +31,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #include <linux/input.h>
 #include <errno.h>
 
@@ -122,9 +123,36 @@ hexdump *btnx_event_read(int fd)
 	return codes;
 }
 
+
+void command_execute(btnx_event *bev)
+{
+	int pid;
+	
+	if (!(pid = fork()))
+	{
+		setuid(bev->uid);
+		//setgid(1000);
+		execv(bev->args[0], bev->args); //&(bev->args[1]));
+	}
+	else if (pid < 0)
+	{
+		fprintf(stderr, "Error: could not fork: %s\n", strerror(errno));
+		return;
+	}
+	
+	//wait(pid);
+	return;
+}
+
 void send_extra_event(btnx_event **bevs, int index)
 {
 	int tmp_kc = bevs[index]->keycode;
+	
+	if (tmp_kc == COMMAND_EXECUTE)
+	{
+		command_execute(bevs[index]);
+		return;
+	}
 	
 	bevs[index]->pressed = 1;
 	uinput_key_press(bevs[index]);

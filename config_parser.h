@@ -23,6 +23,8 @@
 #define CONFIG_PARSE_OPTION_SIZE			64
 #define CONFIG_PARSE_VALUE_SIZE				512
 
+#define IS_ENCLOSING(c) ((c) == '\'' || (c) == '"' || (c) == '`')
+
 
 /* Parses the configuration file */
 btnx_event **config_parse(void);
@@ -33,5 +35,6 @@ int config_get_keycode(const char *value);
 
 void config_add_mod(btnx_event *e, int mod);
 
+char *config_set_command(btnx_event *e, char *value);
 
 #endif /*CONFIG_PARSER_H_*/
