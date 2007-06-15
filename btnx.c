@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.2.8"
+#define PROGRAM_VERSION	"0.2.9"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -139,8 +139,6 @@ void command_execute(btnx_event *bev)
 		fprintf(stderr, "Error: could not fork: %s\n", strerror(errno));
 		return;
 	}
-	
-	//wait(pid);
 	return;
 }
 
@@ -216,7 +214,7 @@ int main(void)
 		if (fd_ev_key != -1)
 			FD_SET(fd_ev_key, &fds);
 	
-		ready = select(max_fd+1, &fds, NULL, NULL, NULL);		
+		ready = select(max_fd+1, &fds, NULL, NULL, NULL);	
 		
 		if (ready == -1)
 			perror("select() error");
@@ -265,6 +263,9 @@ int main(void)
 				}
 			}
 		}
+		
+		/* Clean up the undead */
+		waitpid(-1, NULL, WNOHANG);	
 	}
 	
 	return 0;
