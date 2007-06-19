@@ -17,6 +17,7 @@ Supported:                              Hexdumping by:          Date:
     Logitech MX-1000                    tim71                   June 9, 2007 <-- autoconfigure not supported
     MS IntelliMouse Explorer 3 USB      tweak                   June 12, 2007
     Logitech RX300                      gnyffel                 June 15, 2007
+    Logitech Mediaplay                  meck                    June 19, 2007 <-- autoconfigure not supported
 	
 Pending:
 
