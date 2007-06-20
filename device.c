@@ -21,7 +21,9 @@ const device devices[] =
 	{	"mx600",		0x046D,		0xC50E	},	// Logitech MX-600 && MX-1000 && Mediaplay (problem)
 	{	"msime3",		0x0002,		0x0006	},	// Microsoft IntelliMouse Explorer 3.0 USB (illegal ID values)
 	{	"msime3",		0x045e,		0x0047	},	// Microsoft IntelliMouse Explorer 3.0 USB (should be these)
-	{	"rx300",		0x046d,		0xc040	},	// Logitech RX300
+	{	"rx300",		0x046d,		0xC040	},	// Logitech RX300
+	{	"mx500",		0x046d,		0xC025	},	// Logitech MX-500
+	{	"mx310",		0x046d,		0xC01B	},	// Logitech MX-310
 	{	"0",			0xFFFF,		0xFFFF	}	// Last Field MUST be 0xFFFF, 0xFFFF
 };
 
