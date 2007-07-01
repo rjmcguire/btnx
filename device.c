@@ -29,6 +29,29 @@ const device devices[] =
 
 static int detected_device = 0;
 
+static int product_id=0;
+static int vendor_id=0;
+
+int device_get_vendor_id(void)
+{
+	return vendor_id;
+}
+
+int device_get_product_id(void)
+{
+	return product_id;
+}
+
+void device_set_vendor_id(int id)
+{
+	vendor_id = id;
+}
+
+void device_set_product_id(int id)
+{
+	product_id = id;
+}
+
 void device_set(int index)
 {
 	detected_device = index;

@@ -29,7 +29,7 @@
 /* Parses the configuration file */
 btnx_event **config_parse(void);
 
-char *config_add_value(btnx_event *e, char *option, char *value);
+char *config_add_value(btnx_event *e, int type, char *option, char *value);
 
 int config_get_keycode(const char *value);
 

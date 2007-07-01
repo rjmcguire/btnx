@@ -16,9 +16,18 @@
 #include <errno.h>
 #include <unistd.h>
 
-#define CONFIG_BLOCK_BEGIN		"button"
-#define CONFIG_BLOCK_END		"endbutton"
+#define CONFIG_MOUSE_BEGIN		"Mouse"
+#define CONFIG_MOUSE_END		"EndMouse"
+#define CONFIG_BUTTON_BEGIN		"Button"
+#define CONFIG_BUTTON_END		"EndButton"
 #define MAX_BEVS	10
+
+enum
+{
+	BLOCK_NONE,
+	BLOCK_MOUSE,
+	BLOCK_BUTTON
+};
 
 btnx_event **config_parse(void)
 {
@@ -29,7 +38,7 @@ btnx_event **config_parse(void)
 	char *loc_eq, *loc_com, *loc_beg, *loc_end;
 	int block_begin = 0, block_end = 1;
 	btnx_event **bevs;
-	int i=-1, ret;
+	int i=-1, ret, block_type=BLOCK_NONE;
 	
 	sprintf(buffer,"%s/%s", CONFIG_PATH, CONFIG_NAME);
 	
@@ -75,7 +84,7 @@ btnx_event **config_parse(void)
 			loc_beg = buffer;
 			while (isspace(*loc_beg)) loc_beg++;
 			
-			if (loc_eq && (loc_com == NULL || loc_com > loc_eq) && i>=0)
+			if (loc_eq && (loc_com == NULL || loc_com > loc_eq) && block_type != BLOCK_NONE)
 			{
 				if (loc_com != NULL && loc_com != loc_eq + 1)
 					*loc_com = '\0';
@@ -95,7 +104,7 @@ btnx_event **config_parse(void)
 				*loc_end = '\0';		
 				strcpy(value, loc_beg);
 				
-				if (!config_add_value(bevs[i], option, value))
+				if (!config_add_value(bevs[i], block_type, option, value))
 					perror("Warning: parse error");
 				
 				memset(value, '\0', CONFIG_PARSE_VALUE_SIZE * sizeof(char));
@@ -114,7 +123,7 @@ btnx_event **config_parse(void)
 				while (!isspace(*loc_end) && loc_end < loc_com && *loc_end != '\0') loc_end++;
 				*loc_end = '\0';
 				
-				if (strcasecmp(loc_beg, CONFIG_BLOCK_BEGIN) == 0)
+				if (strcasecmp(loc_beg, CONFIG_BUTTON_BEGIN) == 0)
 				{
 					if (block_end == 0)
 					{
@@ -127,8 +136,10 @@ btnx_event **config_parse(void)
 						bevs = (btnx_event **) realloc(bevs, (i+2)*sizeof(bevs));
 					bevs[i] = (btnx_event *) calloc(1, sizeof(btnx_event));
 					bevs[i+1] = NULL;
+					bevs[i]->enabled = 1;
+					block_type = BLOCK_BUTTON;
 				}
-				else if (strcasecmp(loc_beg, CONFIG_BLOCK_END) == 0)
+				else if (strcasecmp(loc_beg, CONFIG_BUTTON_END) == 0)
 				{
 					if (block_begin == 0)
 					{
@@ -136,6 +147,27 @@ btnx_event **config_parse(void)
 						continue;
 					}
 					block_end = 1;
+					block_type = BLOCK_NONE;
+				}
+				else if (strcasecmp(loc_beg, CONFIG_MOUSE_BEGIN) == 0)
+				{
+					if (block_end == 0)
+					{
+						fprintf(stderr, "Warning: config file parse error\n");
+						continue;
+					}
+					block_begin = 1;
+					block_type = BLOCK_MOUSE;
+				}
+				else if (strcasecmp(loc_beg, CONFIG_MOUSE_END) == 0)
+				{
+					if (block_begin == 0)
+					{
+						fprintf(stderr, "Warning: config file parse error\n");
+						continue;
+					}
+					block_end = 1;
+					block_type = BLOCK_NONE;
 				}
 			}
 		}
@@ -146,60 +178,81 @@ btnx_event **config_parse(void)
 	return bevs;
 }
 
-char *config_add_value(btnx_event *e, char *option, char *value)
+char *config_add_value(btnx_event *e, int type, char *option, char *value)
 {
 #ifdef DEBUG	
 	printf("Loaded config value: %s\n",option);
 #endif
 	
-	if (!strcasecmp(option, "rawcode"))
+	if (type == BLOCK_BUTTON)
 	{
-		e->rawcode = strtol(value, NULL, 16);
-		return option;
+		if (!strcasecmp(option, "rawcode"))
+		{
+			e->rawcode = strtol(value, NULL, 16);
+			return option;
+		}
+		if (!strcasecmp(option, "enabled"))
+		{
+			e->enabled = strtol(value, NULL, 10);
+			return option;
+		}
+		if (!strcasecmp(option, "type"))
+		{
+			e->type = strtol(value, NULL, 10);
+			return option;
+		}
+		/*if (!strcasecmp(option, "value"))
+		{
+			e->value = strtol(value, NULL, 10);
+			return option;
+		}*/
+		if (!strcasecmp(option, "keycode"))
+		{
+			e->keycode = config_get_keycode(value);
+			return option;
+		}
+		if (!strcasecmp(option, "mod1"))
+		{
+			config_add_mod(e, config_get_keycode(value));
+			return option;
+		}
+		if (!strcasecmp(option, "mod2"))
+		{
+			config_add_mod(e, config_get_keycode(value));
+			return option;
+		}
+		if (!strcasecmp(option, "mod3"))
+		{
+			config_add_mod(e, config_get_keycode(value));
+			return option;
+		}
+		if (!strcasecmp(option, "command"))
+		{
+			config_set_command(e, value);
+			return option;
+		}
+		if (!strcasecmp(option, "uid"))
+		{
+			e->uid = strtol(value, NULL, 10);
+			return option;
+		}
+		if (!strcasecmp(option, "name"))
+		{
+			return option;
+		}
 	}
-	if (!strcasecmp(option, "type"))
+	else if (type == BLOCK_MOUSE)
 	{
-		e->type = strtol(value, NULL, 10);
-		return option;
-	}
-	/*if (!strcasecmp(option, "value"))
-	{
-		e->value = strtol(value, NULL, 10);
-		return option;
-	}*/
-	if (!strcasecmp(option, "keycode"))
-	{
-		e->keycode = config_get_keycode(value);
-		return option;
-	}
-	if (!strcasecmp(option, "mod1"))
-	{
-		config_add_mod(e, config_get_keycode(value));
-		return option;
-	}
-	if (!strcasecmp(option, "mod2"))
-	{
-		config_add_mod(e, config_get_keycode(value));
-		return option;
-	}
-	if (!strcasecmp(option, "mod3"))
-	{
-		config_add_mod(e, config_get_keycode(value));
-		return option;
-	}
-	if (!strcasecmp(option, "command"))
-	{
-		config_set_command(e, value);
-		return option;
-	}
-	if (!strcasecmp(option, "uid"))
-	{
-		e->uid = strtol(value, NULL, 10);
-		return option;
-	}
-	if (!strcasecmp(option, "name"))
-	{
-		return option;
+		if (!strcasecmp(option, "vendor_id"))
+		{
+			device_set_vendor_id(strtol(value, NULL, 16));
+			return option;
+		}
+		if (!strcasecmp(option, "product_id"))
+		{
+			device_set_product_id(strtol(value, NULL, 16));
+			return option;
+		}
 	}
 	
 	return NULL;

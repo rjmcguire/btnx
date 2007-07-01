@@ -87,6 +87,8 @@ int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 	{
 		if (bevs[i]->rawcode == rawcode)
 		{
+			if (bevs[i]->enabled == 0)
+				return -1;
 			bevs[i]->pressed = pressed;
 			return i;
 		}

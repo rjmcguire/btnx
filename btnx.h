@@ -32,6 +32,7 @@ typedef struct btnx_event
 	int keycode;
 	int mod[MAX_MODS];
 	int pressed;
+	int enabled;
 	char *command;
 	char **args;
 	int uid;

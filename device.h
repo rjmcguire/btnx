@@ -14,6 +14,10 @@ typedef struct device
 	int product;
 } device;
 
+int device_get_vendor_id(void);
+int device_get_product_id(void);
+void device_set_vendor_id(int id);
+void device_set_product_id(int id);
 
 void device_set(int index);
 
