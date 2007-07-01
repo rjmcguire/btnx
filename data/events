@@ -1,12 +1,4 @@
 
-/*
- * This file has been copied and modified from the Linux header file input.h
- */
-
-/*
- * Keys and buttons
- */
-
 KEY_RESERVED	0
 KEY_ESC			1
 KEY_1			2
@@ -440,10 +432,10 @@ KEY_BRL_DOT6		0x1f6
 KEY_BRL_DOT7		0x1f7
 KEY_BRL_DOT8		0x1f8
 
-/* We avoid low common keys in module aliases so they don't get huge. */
+
 KEY_MIN_INTERESTING	KEY_MUTE
 KEY_MAX			0x1ff
 
-/* Mouse wheel */
+
 REL_WHEELFORWARD	0x08
 REL_WHEELBACK		0x08

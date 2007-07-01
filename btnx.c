@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.2.10"
+#define PROGRAM_VERSION	"0.2.11"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -99,7 +99,7 @@ int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 hexdump *btnx_event_read(int fd)
 {
 	static hexdump codes[MAX_RAWCODES];
-	int ret, i;
+	int ret, i, j=0;
 	unsigned char buffer[INPUT_BUFFER_SIZE];
 	
 	memset(buffer, '\0', INPUT_BUFFER_SIZE);
@@ -108,16 +108,38 @@ hexdump *btnx_event_read(int fd)
 	
 	for (i=0; (i < (ret / HEXDUMP_SIZE) - 1) && (i < MAX_RAWCODES - 1); i++)
 	{
-		codes[i].rawcode = 	CHAR2INT(buffer[0 + i*HEXDUMP_SIZE], 3) | 
+		if ((int)buffer[1 + i*HEXDUMP_SIZE] != 0x00)
+			continue;
+		codes[j].rawcode = 	CHAR2INT(buffer[0 + i*HEXDUMP_SIZE], 3) | 
 							CHAR2INT(buffer[3 + i*HEXDUMP_SIZE], 2) | 
 							CHAR2INT(buffer[2 + i*HEXDUMP_SIZE], 1) | 
 							CHAR2INT(buffer[5 + i*HEXDUMP_SIZE], 0);
-		codes[i].pressed =	buffer[4+i*HEXDUMP_SIZE];
+		codes[j].pressed =	buffer[4+i*HEXDUMP_SIZE];
+		// DEBUG for AMD64 MX Revo
+		/*if (codes[j].rawcode == 0x020006FF || codes[j].rawcode == 0x02000600)
+		{
+			printf("Interpreted a sidescroll! Here is the hexdump:\n");
+			int k;
+			for (k=0; k<ret; k++)
+			{
+				if (k != 0 && k%2 == 0)
+					printf(" ");
+				if (k != 0 && k%16 == 0)
+					printf("\n");
+				if (k%2 == 0 && k<ret-1)
+					printf("%02x", buffer[k+1]);
+				else
+					printf("%02x", buffer[k-1]);
+			}
+			printf("\n");
+		}*/
+		j++;
+		// !DEBUG
 	}
-	for (; i < MAX_RAWCODES; i++)
+	for (; j < MAX_RAWCODES; j++)
 	{
-		codes[i].rawcode = 0;
-		codes[i].pressed = 0;
+		codes[j].rawcode = 0;
+		codes[j].pressed = 0;
 	}
 
 	return codes;
@@ -240,6 +262,13 @@ int main(void)
 					continue;
 				if ((bev_index = btnx_event_get(bevs, raw_codes[i].rawcode, raw_codes[i].pressed)) != -1)
 				{
+					// DEBUG for AMD64 MX Revo
+					/*
+					printf("Got rawcode: 0x%08x\n", bevs[bev_index]->rawcode);
+					printf("Sending event: key=0x%04x mod1==0x%04x mod2==0x%04x mod3==0x%04x\n",
+							bevs[bev_index]->keycode, bevs[bev_index]->mod[0],bevs[bev_index]->mod[1],bevs[bev_index]->mod[2]);
+					*/
+					// !DEBUG
 					if (bevs[bev_index]->type == BUTTON_IMMEDIATE && 
 						bevs[bev_index]->keycode < BTNX_EXTRA_EVENTS)
 					{
