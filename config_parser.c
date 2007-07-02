@@ -105,7 +105,7 @@ btnx_event **config_parse(void)
 				strcpy(value, loc_beg);
 				
 				if (!config_add_value(bevs[i], block_type, option, value))
-					perror("Warning: parse error");
+					fprintf(stderr, "Warning: parse error: %s = %s", option, value);
 				
 				memset(value, '\0', CONFIG_PARSE_VALUE_SIZE * sizeof(char));
 				memset(option, '\0', CONFIG_PARSE_OPTION_SIZE * sizeof(char));
@@ -243,6 +243,10 @@ char *config_add_value(btnx_event *e, int type, char *option, char *value)
 	}
 	else if (type == BLOCK_MOUSE)
 	{
+		if (!strcasecmp(option, "vendor_name"))
+			return option;
+		if (!strcasecmp(option, "product_name"))
+			return option;
 		if (!strcasecmp(option, "vendor_id"))
 		{
 			device_set_vendor_id(strtol(value, NULL, 16));

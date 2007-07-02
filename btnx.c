@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.2.11"
+#define PROGRAM_VERSION	"0.2.12"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -41,6 +41,7 @@
 #include "devices_parser.h"
 
 #define INPUT_BUFFER_SIZE	512
+#define NUM_EVENT_HANDLERS	20
 #define CHAR2INT(c, x) (((int)(c)) << ((x) * 8))
 
 #define NUM_HANDLER_LOCATIONS	3
@@ -78,6 +79,26 @@ int open_handler(char *name, int flags)
 	
 	return -1;
 }
+
+// Preparation for btnx-config
+/*int find_handler(int flags, int vendor, int product, int type)
+{
+	int i, fd;
+	unsigned short id[6];
+	char name[16];
+	
+	for (i=0; i<NUM_EVENT_HANDLERS; i++)
+	{
+		sprintf(name, "event%d", i);
+		if ((fd = open_handler(name, flags)) < 0)
+			continue;
+		ioctl(fd, EVIOCGID, id);
+		if (vendor == id[ID_VENDOR] && product == id[ID_PRODUCT])
+			return fd;
+		close(fd);
+	}
+	return -1;
+}*/
 
 int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 {
