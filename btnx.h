@@ -7,6 +7,8 @@
 #ifndef BTNX_H_
 #define BTNX_H_
 
+#include <sys/time.h>
+
 #define MAX_MODS		3
 #define MAX_RAWCODES	10
 #define HEXDUMP_SIZE	8
@@ -30,6 +32,7 @@ typedef struct btnx_event
 	int rawcode;
 	int type;
 	int delay;
+	struct timeval last;
 	int keycode;
 	int mod[MAX_MODS];
 	int pressed;

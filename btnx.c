@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.2.14"
+#define PROGRAM_VERSION	"0.3.0"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -30,7 +30,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/select.h>
-#include <sys/time.h>
+//#include <sys/time.h>
 #include <sys/wait.h>
 #include <linux/input.h>
 #include <errno.h>
@@ -39,12 +39,29 @@
 #include "btnx.h"
 #include "config_parser.h"
 #include "devices_parser.h"
+#include "device.h"
 
 #define INPUT_BUFFER_SIZE	512
 #define NUM_EVENT_HANDLERS	20
 #define CHAR2INT(c, x) (((int)(c)) << ((x) * 8))
 
 #define NUM_HANDLER_LOCATIONS	3
+
+#define TYPE_MOUSE		0
+#define TYPE_KBD		1
+
+/*
+ * The following macros are from mouseemu, to help distinguish
+ * between keyboard and mouse handlers.
+ */
+#define BITS_PER_LONG (sizeof(long) * 8)
+#ifndef NBITS
+#define NBITS(x) ((((x)-1)/BITS_PER_LONG)+1)
+#endif
+#define OFF(x) ((x)%BITS_PER_LONG)
+#define LONG(x) ((x)/BITS_PER_LONG)
+#define test_bit(bit, array) ((array[LONG(bit)] >> OFF(bit)) & 1)
+/* End mouseemu macros */
 
 const char handler_locations[][15] =
 {
@@ -81,10 +98,11 @@ int open_handler(char *name, int flags)
 }
 
 // Preparation for btnx-config
-/*int find_handler(int flags, int vendor, int product, int type)
+int find_handler(int flags, int vendor, int product, int type)
 {
 	int i, fd;
 	unsigned short id[6];
+	unsigned long bit[NBITS(EV_MAX)];
 	char name[16];
 	
 	for (i=0; i<NUM_EVENT_HANDLERS; i++)
@@ -94,11 +112,17 @@ int open_handler(char *name, int flags)
 			continue;
 		ioctl(fd, EVIOCGID, id);
 		if (vendor == id[ID_VENDOR] && product == id[ID_PRODUCT])
-			return fd;
+		{
+			ioctl(fd, EVIOCGBIT(0, EV_MAX), bit);
+			if ((test_bit(EV_KEY, bit) && test_bit(EV_REP, bit)) && type == TYPE_KBD)
+				return fd;
+			else if ((test_bit(EV_REL, bit)) && type == TYPE_MOUSE)
+				return fd;
+		}
 		close(fd);
 	}
 	return -1;
-}*/
+}
 
 int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 {
@@ -205,6 +229,21 @@ void send_extra_event(btnx_event **bevs, int index)
 	bevs[index]->keycode = tmp_kc;
 }
 
+static int check_delay(btnx_event *bev)
+{
+	struct timeval now;
+	gettimeofday(&now, NULL);
+	
+	if (bev->last.tv_sec == 0 && bev->last.tv_usec == 0)
+		return 0;
+		
+	if (((int)(((unsigned int)now.tv_sec - (unsigned int)bev->last.tv_sec) * 1000) +
+		(int)(((int)now.tv_usec - (int)bev->last.tv_usec) / 1000))
+		> (int)bev->delay)
+		return 0;
+	return -1;
+}
+
 int main(void)
 {
 	int fd_ev_btn=0, fd_ev_key=-1;
@@ -213,11 +252,11 @@ int main(void)
 	int max_fd, ready;
 	btnx_event **bevs;
 	int bev_index;
-	char *mouse_event=NULL, *kbd_event=NULL;
+	//char *mouse_event=NULL, *kbd_event=NULL;
 	int i;
 	int suppress_release=1;
 	
-	devices_parser(&mouse_event, &kbd_event);
+	//devices_parser(&mouse_event, &kbd_event);
 	bevs = config_parse();
 	
 	if (bevs == NULL)
@@ -226,14 +265,16 @@ int main(void)
 		exit(1);
 	}
 	
-	fd_ev_btn = open_handler(mouse_event, O_RDONLY);	//open(mouse_event, O_RDONLY);
+	//fd_ev_btn = open_handler(mouse_event, O_RDONLY);	//open(mouse_event, O_RDONLY);
+	fd_ev_btn = find_handler(O_RDONLY, device_get_vendor_id(), device_get_product_id(), TYPE_MOUSE);
 	if (fd_ev_btn < 0)
 	{
-		fprintf(stderr, "Error opening button event file descriptor\"%s\": %s\n", 
-				mouse_event, strerror(errno));
+		fprintf(stderr, "Error opening button event file descriptor: %s\n", 
+				strerror(errno));
 		exit(EXIT_FAILURE);
 	}
-	if (kbd_event != NULL)
+	fd_ev_key = find_handler(O_RDONLY, device_get_vendor_id(), device_get_product_id(), TYPE_KBD);
+	/*if (kbd_event != NULL)
 	{
 		fd_ev_key = open_handler(kbd_event, O_RDONLY);	//open(kbd_event, O_RDONLY);
 		if (fd_ev_key < 0)
@@ -241,7 +282,7 @@ int main(void)
 			perror("Error opening key event file descriptor");
 			exit(EXIT_FAILURE);
 		}
-	}
+	}*/
 	
 	uinput_init("btnx");
 	
@@ -285,6 +326,12 @@ int main(void)
 					continue;
 				if ((bev_index = btnx_event_get(bevs, raw_codes[i].rawcode, raw_codes[i].pressed)) != -1)
 				{
+					if (bevs[bev_index]->pressed == 1 || bevs[bev_index]->type == BUTTON_IMMEDIATE)
+					{
+						if (check_delay(bevs[bev_index]) < 0)
+							continue;
+						gettimeofday(&(bevs[bev_index]->last), NULL);
+					}
 					// DEBUG for AMD64 MX Revo
 					/*
 					printf("Got rawcode: 0x%08x\n", bevs[bev_index]->rawcode);

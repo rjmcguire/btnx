@@ -4,10 +4,10 @@
   * see btnx.c for detailed license information
   */
 
+#define _GNU_SOURCE				// Needed for strcasestr()
+
 #include "config_parser.h"
 #include "device.h"
-
-#define _GNU_SOURCE				// Needed for strcasestr()
 
 #include <string.h>
 #include <stdlib.h>
@@ -38,12 +38,14 @@ btnx_event **config_parse(void)
 	char *loc_eq, *loc_com, *loc_beg, *loc_end;
 	int block_begin = 0, block_end = 1;
 	btnx_event **bevs;
-	int i=-1, ret, block_type=BLOCK_NONE;
+	int i=-1, block_type=BLOCK_NONE; //ret,
 	
 	sprintf(buffer,"%s/%s", CONFIG_PATH, CONFIG_NAME);
 	
 	if (!(fp = fopen(buffer,"r")))
 	{
+		/* old btnx code, still here just in case
+		 * 
 		if (errno == ENOENT)
 		{
 			sprintf(buffer, "cp %s/%s%s %s/%s",
@@ -71,6 +73,9 @@ btnx_event **config_parse(void)
 			perror("Could not read the config file");
 			return NULL;
 		}
+		*/
+		perror("Could not read the config file");
+		return NULL;
 	}
 	
 	bevs = (btnx_event **) calloc(MAX_BEVS+1, sizeof(btnx_event*));
@@ -137,6 +142,9 @@ btnx_event **config_parse(void)
 					bevs[i] = (btnx_event *) calloc(1, sizeof(btnx_event));
 					bevs[i+1] = NULL;
 					bevs[i]->enabled = 1;
+					bevs[i]->delay = 0;
+					bevs[i]->last.tv_sec = 0;
+					bevs[i]->last.tv_usec = 0;
 					block_type = BLOCK_BUTTON;
 				}
 				else if (strcasecmp(loc_beg, CONFIG_BUTTON_END) == 0)
