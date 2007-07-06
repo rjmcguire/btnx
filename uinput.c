@@ -17,6 +17,10 @@
 #include "uinput.h"
 #include "btnx.h"
 
+#define BTNX_VENDOR			0xB216
+#define BTNX_PRODUCT_MOUSE	0x0001
+#define BTNX_PRODUCT_KBD	0x0002
+
 static int uinput_mouse_fd = -1;
 static int uinput_kbd_fd = -1;
 
@@ -43,10 +47,18 @@ int uinput_init(const char *dev_name)
   }
 
   memset(&dev_mouse, 0, sizeof(dev_mouse));
+  dev_mouse.id.bustype = 0;
+  dev_mouse.id.vendor = BTNX_VENDOR;
+  dev_mouse.id.product = BTNX_PRODUCT_MOUSE;
+  dev_mouse.id.version = 0;
   strcpy(dev_mouse.name, UMOUSE_NAME);
   write(uinput_mouse_fd, &dev_mouse, sizeof(dev_mouse));
   
   memset(&dev_kbd, 0, sizeof(dev_kbd));
+  dev_kbd.id.bustype = 0;
+  dev_kbd.id.vendor = BTNX_VENDOR;
+  dev_kbd.id.product = BTNX_PRODUCT_KBD;
+  dev_kbd.id.version = 0;
   strcpy(dev_kbd.name, UKBD_NAME);
   write(uinput_kbd_fd, &dev_kbd, sizeof(dev_kbd));
 

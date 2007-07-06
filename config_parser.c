@@ -201,11 +201,11 @@ char *config_add_value(btnx_event *e, int type, char *option, char *value)
 			e->type = strtol(value, NULL, 10);
 			return option;
 		}
-		/*if (!strcasecmp(option, "value"))
+		if (!strcasecmp(option, "delay"))
 		{
-			e->value = strtol(value, NULL, 10);
+			e->delay = strtol(value, NULL, 10);
 			return option;
-		}*/
+		}
 		if (!strcasecmp(option, "keycode"))
 		{
 			e->keycode = config_get_keycode(value);

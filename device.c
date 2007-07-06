@@ -21,6 +21,7 @@ const device devices[] =
 	{	"mx600",		0x046D,		0xC50E	},	// Logitech MX-600 && MX-1000 && Mediaplay && Cordless Click Plus (problem)
 	{	"msime3",		0x0002,		0x0006	},	// Microsoft IntelliMouse Explorer 3.0 USB (illegal ID values)
 	{	"msime3",		0x045e,		0x0047	},	// Microsoft IntelliMouse Explorer 3.0 USB (should be these)
+	{	"msime2",		0x045e,		0x008c	},	// Microsoft Wireless IntelliMouse Explorer 2.0
 	{	"rx300",		0x046d,		0xC040	},	// Logitech RX300
 	{	"mx500",		0x046d,		0xC025	},	// Logitech MX-500
 	{	"mx310",		0x046d,		0xC01B	},	// Logitech MX-310

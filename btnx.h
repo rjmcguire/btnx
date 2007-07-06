@@ -29,6 +29,7 @@ typedef struct btnx_event
 {
 	int rawcode;
 	int type;
+	int delay;
 	int keycode;
 	int mod[MAX_MODS];
 	int pressed;
