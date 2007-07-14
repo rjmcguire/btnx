@@ -21,7 +21,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.3.0"
+#define PROGRAM_VERSION	"0.3.1"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -30,7 +30,6 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/select.h>
-//#include <sys/time.h>
 #include <sys/wait.h>
 #include <linux/input.h>
 #include <errno.h>
@@ -97,7 +96,6 @@ int open_handler(char *name, int flags)
 	return -1;
 }
 
-// Preparation for btnx-config
 int find_handler(int flags, int vendor, int product, int type)
 {
 	int i, fd;
@@ -114,8 +112,10 @@ int find_handler(int flags, int vendor, int product, int type)
 		if (vendor == id[ID_VENDOR] && product == id[ID_PRODUCT])
 		{
 			ioctl(fd, EVIOCGBIT(0, EV_MAX), bit);
-			if ((test_bit(EV_KEY, bit) && test_bit(EV_REP, bit)) && type == TYPE_KBD)
+			if (((test_bit(EV_KEY, bit) && test_bit(EV_ABS, bit)) && type == TYPE_KBD))
+			{
 				return fd;
+			}
 			else if ((test_bit(EV_REL, bit)) && type == TYPE_MOUSE)
 				return fd;
 		}
@@ -162,26 +162,7 @@ hexdump *btnx_event_read(int fd)
 							CHAR2INT(buffer[2 + i*HEXDUMP_SIZE], 1) | 
 							CHAR2INT(buffer[5 + i*HEXDUMP_SIZE], 0);
 		codes[j].pressed =	buffer[4+i*HEXDUMP_SIZE];
-		// DEBUG for AMD64 MX Revo
-		/*if (codes[j].rawcode == 0x020006FF || codes[j].rawcode == 0x02000600)
-		{
-			printf("Interpreted a sidescroll! Here is the hexdump:\n");
-			int k;
-			for (k=0; k<ret; k++)
-			{
-				if (k != 0 && k%2 == 0)
-					printf(" ");
-				if (k != 0 && k%16 == 0)
-					printf("\n");
-				if (k%2 == 0 && k<ret-1)
-					printf("%02x", buffer[k+1]);
-				else
-					printf("%02x", buffer[k-1]);
-			}
-			printf("\n");
-		}*/
 		j++;
-		// !DEBUG
 	}
 	for (; j < MAX_RAWCODES; j++)
 	{
@@ -200,8 +181,7 @@ void command_execute(btnx_event *bev)
 	if (!(pid = fork()))
 	{
 		setuid(bev->uid);
-		//setgid(1000);
-		execv(bev->args[0], bev->args); //&(bev->args[1]));
+		execv(bev->args[0], bev->args);
 	}
 	else if (pid < 0)
 	{
@@ -252,11 +232,17 @@ int main(void)
 	int max_fd, ready;
 	btnx_event **bevs;
 	int bev_index;
-	//char *mouse_event=NULL, *kbd_event=NULL;
 	int i;
 	int suppress_release=1;
 	
-	//devices_parser(&mouse_event, &kbd_event);
+	if (system("modprobe uinput") != 0)
+	{
+		fprintf(stderr, "Warning: modprobe uinput failed. Make sure the uinput \
+module is loaded before running btnx. If it's already running, no problem.\n");
+	}
+	else
+		printf("uinput modprobed successfully.\n");
+	
 	bevs = config_parse();
 	
 	if (bevs == NULL)
@@ -265,7 +251,6 @@ int main(void)
 		exit(1);
 	}
 	
-	//fd_ev_btn = open_handler(mouse_event, O_RDONLY);	//open(mouse_event, O_RDONLY);
 	fd_ev_btn = find_handler(O_RDONLY, device_get_vendor_id(), device_get_product_id(), TYPE_MOUSE);
 	if (fd_ev_btn < 0)
 	{
@@ -274,15 +259,6 @@ int main(void)
 		exit(EXIT_FAILURE);
 	}
 	fd_ev_key = find_handler(O_RDONLY, device_get_vendor_id(), device_get_product_id(), TYPE_KBD);
-	/*if (kbd_event != NULL)
-	{
-		fd_ev_key = open_handler(kbd_event, O_RDONLY);	//open(kbd_event, O_RDONLY);
-		if (fd_ev_key < 0)
-		{
-			perror("Error opening key event file descriptor");
-			exit(EXIT_FAILURE);
-		}
-	}*/
 	
 	uinput_init("btnx");
 	
@@ -332,13 +308,6 @@ int main(void)
 							continue;
 						gettimeofday(&(bevs[bev_index]->last), NULL);
 					}
-					// DEBUG for AMD64 MX Revo
-					/*
-					printf("Got rawcode: 0x%08x\n", bevs[bev_index]->rawcode);
-					printf("Sending event: key=0x%04x mod1==0x%04x mod2==0x%04x mod3==0x%04x\n",
-							bevs[bev_index]->keycode, bevs[bev_index]->mod[0],bevs[bev_index]->mod[1],bevs[bev_index]->mod[2]);
-					*/
-					// !DEBUG
 					if (bevs[bev_index]->type == BUTTON_IMMEDIATE && 
 						bevs[bev_index]->keycode < BTNX_EXTRA_EVENTS)
 					{

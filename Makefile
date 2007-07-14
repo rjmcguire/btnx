@@ -1,9 +1,11 @@
 
 CC = gcc
 CFLAGS = -Wall
+LFLAGS =
+#-lusb
 
-DEPS = uinput.h btnx.h config_parser.h devices_parser.h device.h
-OBJ = btnx.o uinput.o config_parser.o devices_parser.o device.o
+DEPS = uinput.h btnx.h config_parser.h devices_parser.h device.h usb_handler.h
+OBJ = btnx.o uinput.o config_parser.o devices_parser.o device.o usb_handler.o
 BIN = btnx
 SCRIPTS_DIR = ./scripts
 INSTALL = install.sh
@@ -15,7 +17,7 @@ UNINSTALL_GENERIC = uninstall-generic.sh
 	$(CC) $< $(CFLAGS) -c -o $@
 
 all: $(OBJ)
-	$(CC) -o $(BIN) $^ $(CFLAGS)
+	$(CC) -o $(BIN) $^ $(CFLAGS) $(LFLAGS)
 
 clean:
 	rm -f $(OBJ) $(BIN)

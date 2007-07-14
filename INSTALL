@@ -1,11 +1,18 @@
 
 Installation instructions:
-If you are upgrading your btnx, you don't have
-to uninstall first. Installation will make a
-backup of your previous configuration file.
+You must install first if you are upgrading from
+btnx-0.2.x. Make sure to uninstall from btnx-0.2.x
+source directory.
+
+btnx-0.3.x needs btnx-config. Make sure to install
+btnx-config after installing btnx.
+
+btnx needs:
+uinput
+udev (for hotplugging)
 
 -------------------------------------
-Ubuntu (possibly Debian as well):
+For distros without sudo, you know what to do.
 
 $ make
 $ sudo make install
@@ -15,21 +22,3 @@ Uninstall:
 $ sudo make uninstall
 
 -------------------------------------
-
-Other distros:
-bntx will not autostart on boot when following
-these instructions. If your distro comes with
-the update-rc.d utility and runlevels are
-defined as they are in Ubuntu (2-5 runlevels
-are all treated the same), you can use the
-Ubuntu installation instructions.
-
-$ make
-Then, as root:
-# make install-generic
-
-Uninstall:
-# make uninstall-generic
-
-Run (as root):
-# ./btnx

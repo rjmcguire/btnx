@@ -47,13 +47,39 @@ else
 	echo -ne "."
 fi
 
-# Copy the default configurations to the config directory.
-cp -r $DEFAULTS_DIR $CONFIG_DIR
-if [ $? -ne 0 ]; then
-	echo "Error: could not copy $DEFAULTS_DIR to $CONFIG_DIR."
-	exit 1
+# Check for /usr/sbin dir. Create if nonexistent.
+if [ -d $BIN_DIR  ]; then
+	echo -ne "."
+else
+	#echo -ne "Making bin dir... "
+	mkdir $BIN_DIR
+	if [ $? -ne 0 ]; then
+		echo "Error: could not make directory: $BIN_DIR."
+		exit 1
+	fi
+	echo -ne "."
 fi
-echo -ne "."
+
+# Check for /etc/init.d dir. Create if nonexistent.
+if [ -d $INIT_DIR  ]; then
+	echo -ne "."
+else
+	#echo -ne "Making init dir... "
+	mkdir $INIT_DIR
+	if [ $? -ne 0 ]; then
+		echo "Error: could not make directory: $INIT_DIR."
+		exit 1
+	fi
+	echo -ne "."
+fi
+
+# Copy the default configurations to the config directory.
+#cp -r $DEFAULTS_DIR $CONFIG_DIR
+#if [ $? -ne 0 ]; then
+#	echo "Error: could not copy $DEFAULTS_DIR to $CONFIG_DIR."
+#	exit 1
+#fi
+#echo -ne "."
 
 # Copy the events file to the config directory.
 #echo -ne "Installing events... "
@@ -67,25 +93,25 @@ echo -ne "."
 # Make sure an old config file isn't installed. Won't
 # copy the correct default config otherwise on first run.
 # Create a backup of the old one.
-CONFIG_BAK=$CONFIG.bak
-CONFIG_INDEX=1
-if [ -f $CONFIG_DIR/$CONFIG ]; then
-	echo "Detected a previous btnx_config file."
-	echo -ne "Keep old configuration file "
-	prompt_yn
-	if [ $? -ne 1 ]; then
-		while [ -f $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX} ]; do
-			CONFIG_INDEX=`expr $CONFIG_INDEX + 1`
-		done
-		mv $CONFIG_DIR/$CONFIG $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}
-		if [ $? -ne 0 ]; then
-			echo "Error: could not backup old config file."
-			exit 1
-		fi
-		echo ""
-		echo "Backed up old configuration file to $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}"
-	fi
-fi
+#CONFIG_BAK=$CONFIG.bak
+#CONFIG_INDEX=1
+#if [ -f $CONFIG_DIR/$CONFIG ]; then
+#	echo "Detected a previous btnx_config file."
+#	echo -ne "Keep old configuration file "
+#	prompt_yn
+#	if [ $? -ne 1 ]; then
+#		while [ -f $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX} ]; do
+#			CONFIG_INDEX=`expr $CONFIG_INDEX + 1`
+#		done
+#		mv $CONFIG_DIR/$CONFIG $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}
+#		if [ $? -ne 0 ]; then
+#			echo "Error: could not backup old config file."
+#			exit 1
+#		fi
+#		echo ""
+#		echo "Backed up old configuration file to $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}"
+#	fi
+#fi
 
 # Make sure a previous btnx daemon is not running
 if [ -f $INIT_DIR/$NAME ]; then
@@ -126,10 +152,10 @@ chmod 0744 $INIT_DIR/$NAME
 
 echo "."
 
-update-rc.d $NAME start 49 2 3 4 5 . stop 49 0 1 6 . > /dev/null
+#update-rc.d $NAME start 49 2 3 4 5 . stop 49 0 1 6 . > /dev/null
 
 
-echo "$NAME successfully installed. Starting $NAME."
+echo "$NAME has been successfully installed."
 
 $INIT_DIR/$NAME start
 

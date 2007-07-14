@@ -3,6 +3,10 @@
   * Copyright (C) 2007  Olli Salonen <oasalonen@gmail.com>
   * see btnx.c for detailed license information
   */
+  
+  /* 
+   * THIS FILE IS NO LONGER NECESSARY FOR btnx-0.3.x!!!
+   */
 
 #define _GNU_SOURCE				// Needed for strcasestr()
 
