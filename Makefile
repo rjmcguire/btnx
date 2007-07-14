@@ -31,9 +31,11 @@ uninstall:
 	$(SCRIPTS_DIR)/$(UNINSTALL)
 	
 install-generic:
-	chmod a+rx $(SCRIPTS_DIR)/$(INSTALL_GENERIC)
-	$(SCRIPTS_DIR)/$(INSTALL_GENERIC)
+	echo "Error: install-generic is no longer necessary. Use install instead."
+	#chmod a+rx $(SCRIPTS_DIR)/$(INSTALL_GENERIC)
+	#$(SCRIPTS_DIR)/$(INSTALL_GENERIC)
 
 uninstall-generic:
-	chmod a+rx $(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)
-	$(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)
+	echo "Error: uninstall-generic is no longer necessary. Use uninstall instead."
+	#chmod a+rx $(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)
+	#$(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)
