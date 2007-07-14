@@ -4,8 +4,8 @@ CFLAGS = -Wall
 LFLAGS =
 #-lusb
 
-DEPS = uinput.h btnx.h config_parser.h devices_parser.h device.h usb_handler.h
-OBJ = btnx.o uinput.o config_parser.o devices_parser.o device.o usb_handler.o
+DEPS = uinput.h btnx.h config_parser.h devices_parser.h device.h
+OBJ = btnx.o uinput.o config_parser.o devices_parser.o device.o
 BIN = btnx
 SCRIPTS_DIR = ./scripts
 INSTALL = install.sh
@@ -32,10 +32,6 @@ uninstall:
 	
 install-generic:
 	echo "Error: install-generic is no longer necessary. Use install instead."
-	#chmod a+rx $(SCRIPTS_DIR)/$(INSTALL_GENERIC)
-	#$(SCRIPTS_DIR)/$(INSTALL_GENERIC)
 
 uninstall-generic:
 	echo "Error: uninstall-generic is no longer necessary. Use uninstall instead."
-	#chmod a+rx $(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)
-	#$(SCRIPTS_DIR)/$(UNINSTALL_GENERIC)
