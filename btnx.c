@@ -20,8 +20,15 @@
  * Boston, MA  02110-1301, USA.                                           *
  *------------------------------------------------------------------------*/
  
+/*------------------------------------------------------------------------*
+ * File revoco.c has no copyrights (it was written by an animal), and is  *
+ * not bound by the GNU GPL.                                              *
+ * However, it is still distributed and modified by the blessing of its   *
+ * original author. See revoco.c for contact info of the author.          *
+ *------------------------------------------------------------------------*/
+ 
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.3.1"
+#define PROGRAM_VERSION	"0.3.2"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,6 +46,7 @@
 #include "config_parser.h"
 #include "devices_parser.h"
 #include "device.h"
+#include "revoco.h"
 
 #define INPUT_BUFFER_SIZE	512
 #define NUM_EVENT_HANDLERS	20
@@ -266,6 +274,8 @@ module is loaded before running btnx. If it's already running, no problem.\n");
 		max_fd = fd_ev_btn;
 	else
 		max_fd = fd_ev_key;
+	
+	revoco_launch();
 	
 	fprintf(stderr, "No startup errors\n");
 	

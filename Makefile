@@ -4,8 +4,8 @@ CFLAGS = -Wall
 LFLAGS =
 #-lusb
 
-DEPS = uinput.h btnx.h config_parser.h devices_parser.h device.h
-OBJ = btnx.o uinput.o config_parser.o devices_parser.o device.o
+DEPS = uinput.h btnx.h config_parser.h devices_parser.h device.h revoco.h
+OBJ = btnx.o uinput.o config_parser.o devices_parser.o device.o revoco.o
 BIN = btnx
 SCRIPTS_DIR = ./scripts
 INSTALL = install.sh

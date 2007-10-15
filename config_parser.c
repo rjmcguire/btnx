@@ -8,6 +8,7 @@
 
 #include "config_parser.h"
 #include "device.h"
+#include "revoco.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -44,36 +45,6 @@ btnx_event **config_parse(void)
 	
 	if (!(fp = fopen(buffer,"r")))
 	{
-		/* old btnx code, still here just in case
-		 * 
-		if (errno == ENOENT)
-		{
-			sprintf(buffer, "cp %s/%s%s %s/%s",
-					DEFAULTS_CONFIG_PATH, 
-					DEFAULT_CONFIG_NAME, 
-					device_get_name(-1),
-					CONFIG_PATH,
-					CONFIG_NAME);
-			ret = system(buffer);
-			if (ret != 0)
-			{
-				fprintf(stderr, "Error: No config defined and default configuration missing for %s.\n",
-					device_get_name(-1));
-				exit(1);
-			}
-			sprintf(buffer,"%s/%s", CONFIG_PATH, CONFIG_NAME);
-			if (!(fp = fopen(buffer,"r")))
-			{
-				perror("Could not read the config file");
-				return NULL;
-			}
-		}
-		else
-		{
-			perror("Could not read the config file");
-			return NULL;
-		}
-		*/
 		perror("Could not read the config file");
 		return NULL;
 	}
@@ -263,6 +234,26 @@ char *config_add_value(btnx_event *e, int type, char *option, char *value)
 		if (!strcasecmp(option, "product_id"))
 		{
 			device_set_product_id(strtol(value, NULL, 16));
+			return option;
+		}
+		if (!strcasecmp(option, "revoco_mode"))
+		{
+			revoco_set_mode(strtol(value, NULL, 10));
+			return option;
+		}
+		if (!strcasecmp(option, "revoco_btn"))
+		{
+			revoco_set_btn(strtol(value, NULL, 10));
+			return option;
+		}
+		if (!strcasecmp(option, "revoco_up_scroll"))
+		{
+			revoco_set_up_scroll(strtol(value, NULL, 10));
+			return option;
+		}
+		if (!strcasecmp(option, "revoco_down_scroll"))
+		{
+			revoco_set_down_scroll(strtol(value, NULL, 10));
 			return option;
 		}
 	}
