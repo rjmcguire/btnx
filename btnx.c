@@ -28,7 +28,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.3.2"
+#define PROGRAM_VERSION	"0.3.3"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -38,6 +38,7 @@
 #include <sys/types.h>
 #include <sys/select.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <linux/input.h>
 #include <errno.h>
 
@@ -56,6 +57,8 @@
 
 #define TYPE_MOUSE		0
 #define TYPE_KBD		1
+
+#define PID_FILE		"/var/run/btnx.pid"
 
 /*
  * The following macros are from mouseemu, to help distinguish
@@ -232,7 +235,52 @@ static int check_delay(btnx_event *bev)
 	return -1;
 }
 
-int main(void)
+static void create_pid_file(void)
+{
+	int fd;
+	char tmp[8];
+	
+	if ((fd = open(PID_FILE, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
+	{
+		fprintf(stderr, "Warning: failed to create pid file %s: %s\n", 
+				PID_FILE, strerror(errno));
+		return;	
+	}
+	sprintf(tmp, "%d", getpid());
+	if ((write(fd, tmp, strlen(tmp))) < strlen(tmp))
+	{
+		fprintf(stderr, "Warning: write error to pid file %s: %s\n",
+				PID_FILE, strerror(errno));
+	}
+	close(fd);
+}
+
+static void main_args(int argc, char *argv[], int *bg)
+{
+	if (argc > 1)
+	{
+		if (!strncmp(argv[1], "-b", 2))
+			*bg=1;
+		else if (!strncmp(argv[1], "-v", 2))
+		{
+			printf(	PROGRAM_NAME " v." PROGRAM_VERSION "\n"
+					"Author: Olli Salonen <oasalonen@gmail.com>\n"
+					"Compatible with btnx-config >= v.0.2.0\n");
+			exit(0);	
+		}
+		else
+		{
+			printf(	PROGRAM_NAME " usage:\n"
+					"Argument:\tDescription:\n"
+					"-v\t\tPrint version number\n"
+					"-b\t\tRun process as a background daemon\n"
+					"-h\t\tPrint this text\n");
+			exit(0);
+		}
+	}
+}
+
+int main(int argc, char *argv[])
 {
 	int fd_ev_btn=0, fd_ev_key=-1;
 	fd_set fds;
@@ -242,6 +290,12 @@ int main(void)
 	int bev_index;
 	int i;
 	int suppress_release=1;
+	int bg=0;
+	
+	main_args(argc, argv, &bg);
+	
+	if (bg) daemon(0,0);
+	create_pid_file();
 	
 	if (system("modprobe uinput") != 0)
 	{

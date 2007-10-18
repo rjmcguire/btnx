@@ -15,7 +15,7 @@
 # Do NOT "set -e"
 
 # PATH should only include /usr/* if it runs after the mountnfs.sh script
-PATH=/sbin:/usr/sbin:/bin:/usr/bin
+PATH=$PATH:/sbin:/usr/sbin:/bin:/usr/bin
 DESC="Button Extension - mouse button rerouter daemon"
 NAME=btnx
 DAEMON=/usr/sbin/$NAME
@@ -27,12 +27,6 @@ LOG=/etc/btnx/$NAME.log
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 0
 
-# Read configuration variable file if it is present
-[ -r /etc/default/$NAME ] && . /etc/default/$NAME
-
-# Load the VERBOSE setting and other rcS variables
-. /lib/init/vars.sh
-
 # Define LSB log_* functions.
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
 . /lib/lsb/init-functions
@@ -42,19 +36,12 @@ LOG=/etc/btnx/$NAME.log
 #
 do_start()
 {
-	modprobe uinput
 	# Return
 	#   0 if daemon has been started
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
-	start-stop-daemon --start --quiet --pidfile $PIDFILE --exec $DAEMON --test > /dev/null \
-		|| return 1
-	start-stop-daemon --start --background --quiet --make-pidfile --pidfile $PIDFILE --exec $DAEMON -- \
-		$DAEMON_ARGS \
-		|| return 2
-	# Add code here, if necessary, that waits for the process to be ready
-	# to handle requests from services started subsequently which depend
-	# on this one.  As a last resort, sleep for some time.
+	
+	start_daemon -p $PIDFILE $DAEMON -b || return 2
 }
 
 #
@@ -67,20 +54,12 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	start-stop-daemon --stop --quiet --retry=TERM/5/KILL/2 --pidfile $PIDFILE --name $NAME
-	RETVAL="$?"
-	[ "$RETVAL" = 2 ] && return 2
-	# Wait for children to finish too if this is a daemon that forks
-	# and if the daemon is only ever run from this initscript.
-	# If the above conditions are not satisfied then add some other code
-	# that waits for the process to drop all resources that could be
-	# needed by services started subsequently.  A last resort is to
-	# sleep for some time.
-	start-stop-daemon --stop --quiet --oknodo --retry=0/5/KILL/2 --exec $DAEMON
+	
+	killproc -p $PIDFILE $DAEMON SIGKILL
 	[ "$?" = 2 ] && return 2
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
-	return "$RETVAL"
+	return 0
 }
 
 #
@@ -91,26 +70,25 @@ do_reload() {
 	# If the daemon can reload its configuration without
 	# restarting (for example, when it is sent a SIGHUP),
 	# then implement that here.
-	#
-	start-stop-daemon --stop --signal 1 --quiet --pidfile $PIDFILE --name $NAME
+	
 	return 0
 }
 
 case "$1" in
   start)
-	[ "$VERBOSE" != no ] && log_daemon_msg "Starting $DESC" "$NAME"
+	echo "Starting $NAME :" "$DESC" >&2
 	do_start
 	case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+		0|1) log_success_msg "btnx successfully started" ;;
+		2) log_failure_msg "btnx failed to start" ;;
 	esac
 	;;
   stop)
-	[ "$VERBOSE" != no ] && log_daemon_msg "Stopping $DESC" "$NAME"
+	echo "Stopping $NAME :" "$DESC" >&2
 	do_stop
 	case "$?" in
-		0|1) [ "$VERBOSE" != no ] && log_end_msg 0 ;;
-		2) [ "$VERBOSE" != no ] && log_end_msg 1 ;;
+		0|1) log_success_msg "btnx successfully stopped" ;;
+		2) log_failure_msg "btnx failed to stop" ;;
 	esac
 	;;
   #reload|force-reload)
@@ -127,25 +105,24 @@ case "$1" in
 	# If the "reload" option is implemented then remove the
 	# 'force-reload' alias
 	#
-	log_daemon_msg "Restarting $DESC" "$NAME"
+	echo "Restarting $NAME :" "$DESC" &>2
 	do_stop
 	case "$?" in
 	  0|1)
+	  	log_success_msg "btnx successfully stopped"
 		do_start
 		case "$?" in
-			0) log_end_msg 0 ;;
-			1) log_end_msg 1 ;; # Old process is still running
-			*) log_end_msg 1 ;; # Failed to start
+			0|1) log_success_msg "btnx successfully started" ;;
+			2) log_failure_msg "btnx failed to stop during restart"
 		esac
 		;;
 	  *)
 	  	# Failed to stop
-		log_end_msg 1
+		log_failure_msg "btnx failed to stop during restart"
 		;;
 	esac
 	;;
   *)
-	#echo "Usage: $SCRIPTNAME {start|stop|restart|reload|force-reload}" >&2
 	echo "Usage: $SCRIPTNAME {start|stop|restart|force-reload}" >&2
 	exit 3
 	;;

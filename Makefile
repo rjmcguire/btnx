@@ -20,18 +20,18 @@ all: $(OBJ)
 	$(CC) -o $(BIN) $^ $(CFLAGS) $(LFLAGS)
 
 clean:
-	rm -f $(OBJ) $(BIN)
+	@rm -f $(OBJ) $(BIN)
 
 install:
-	chmod a+rx $(SCRIPTS_DIR)/$(INSTALL)
-	$(SCRIPTS_DIR)/$(INSTALL)
+	@chmod a+rx $(SCRIPTS_DIR)/$(INSTALL)
+	@$(SCRIPTS_DIR)/$(INSTALL)
 
 uninstall:
-	chmod a+rx $(SCRIPTS_DIR)/$(UNINSTALL)
-	$(SCRIPTS_DIR)/$(UNINSTALL)
+	@chmod a+rx $(SCRIPTS_DIR)/$(UNINSTALL)
+	@$(SCRIPTS_DIR)/$(UNINSTALL)
 	
 install-generic:
-	echo "Error: install-generic is no longer necessary. Use install instead."
+	@echo "Error: install-generic is no longer necessary. Use install instead."
 
 uninstall-generic:
-	echo "Error: uninstall-generic is no longer necessary. Use uninstall instead."
+	@echo "Error: uninstall-generic is no longer necessary. Use uninstall instead."

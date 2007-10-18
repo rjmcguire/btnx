@@ -31,8 +31,18 @@ function prompt_yn {
 	done
 }
 
+echo "Installing $NAME..."
 
-echo -ne "Installing..."
+# Make sure a previous btnx daemon is not running
+if [ -f $INIT_DIR/$NAME ]; then
+	echo "Existing btnx service found. Attempting to stop the service."
+	/etc/init.d/btnx stop 2> /dev/null
+	if [ $? -ne 0 ]; then
+		echo "* Warning: error attemping to stop existing btnx daemon. Continuing..."
+	fi
+fi
+echo -ne "."
+
 
 # Check for config dir. Create if nonexistent.
 if [ -d $CONFIG_DIR  ]; then
@@ -41,7 +51,7 @@ else
 	#echo -ne "Making config dir... "
 	mkdir $CONFIG_DIR
 	if [ $? -ne 0 ]; then
-		echo "Error: could not make directory: $CONFIG_DIR. \rDid you forget sudo?"
+		echo -e "\n* Error: could not make directory: $CONFIG_DIR. \rDid you forget sudo?"
 		exit 1
 	fi
 	echo -ne "."
@@ -54,7 +64,7 @@ else
 	#echo -ne "Making bin dir... "
 	mkdir $BIN_DIR
 	if [ $? -ne 0 ]; then
-		echo "Error: could not make directory: $BIN_DIR."
+		echo -e "\n* Error: could not make directory: $BIN_DIR."
 		exit 1
 	fi
 	echo -ne "."
@@ -67,7 +77,7 @@ else
 	#echo -ne "Making init dir... "
 	mkdir $INIT_DIR
 	if [ $? -ne 0 ]; then
-		echo "Error: could not make directory: $INIT_DIR."
+		echo -e "\n* Error: could not make directory: $INIT_DIR."
 		exit 1
 	fi
 	echo -ne "."
@@ -85,7 +95,7 @@ fi
 #echo -ne "Installing events... "
 cp $DATA_DIR/$EVENTS $CONFIG_DIR
 if [ $? -ne 0 ]; then
-	echo "Error: could not copy $EVENTS to $CONFIG_DIR."
+	echo -e "\n* Error: could not copy $EVENTS to $CONFIG_DIR."
 	exit 1
 fi
 echo -ne "."
@@ -111,19 +121,13 @@ echo -ne "."
 #		echo ""
 #		echo "Backed up old configuration file to $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}"
 #	fi
-#fi
-
-# Make sure a previous btnx daemon is not running
-if [ -f $INIT_DIR/$NAME ]; then
-	/etc/init.d/btnx stop 2> /dev/null
-fi
-echo -ne "."
+#f
 
 # Copy the binary file to the binary directory.
 #echo -ne "Installing binary files... "
 cp $NAME $BIN_DIR
 if [ $? -ne 0 ]; then
-	echo "Error: could not copy $NAME to $BIN_DIR."
+	echo -e "\n*Error: could not copy $NAME to $BIN_DIR."
 	exit 1
 fi
 echo -ne "."
@@ -140,7 +144,7 @@ echo -ne "."
 #echo -ne "Installing init scripts... "
 cp $SCRIPT_DIR/$SCRIPT_INIT $INIT_DIR/$NAME
 if [ $? -ne 0 ]; then
-	echo "Error: could not copy $SCRIPT_INIT to $INIT_DIR."
+	echo "\n* Error: could not copy $SCRIPT_INIT to $INIT_DIR."
 	exit 1
 fi
 echo -ne "."
@@ -155,7 +159,7 @@ echo "."
 #update-rc.d $NAME start 49 2 3 4 5 . stop 49 0 1 6 . > /dev/null
 
 
-echo "$NAME has been successfully installed."
+echo -e "$NAME has been successfully installed!\n"
 
 $INIT_DIR/$NAME start
 
