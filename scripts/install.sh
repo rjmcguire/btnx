@@ -160,7 +160,7 @@ echo "."
 
 
 echo -e "$NAME has been successfully installed!\n"
-
-$INIT_DIR/$NAME start
+echo -e "You can type 'sudo /etc/init.d/btnx start' to start btnx if you have made a configuration file with btnx-config."
+#$INIT_DIR/$NAME start
 
 

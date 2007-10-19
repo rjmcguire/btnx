@@ -41,6 +41,7 @@
 #include <sys/stat.h>
 #include <linux/input.h>
 #include <errno.h>
+#include <signal.h>
 
 #include "uinput.h"
 #include "btnx.h"
@@ -73,6 +74,7 @@
 #define test_bit(bit, array) ((array[LONG(bit)] >> OFF(bit)) & 1)
 /* End mouseemu macros */
 
+/* Possible paths of event handlers */
 const char handler_locations[][15] =
 {
 	{"/dev"},
@@ -80,6 +82,8 @@ const char handler_locations[][15] =
 	{"/dev/misc"}
 };
 
+/* To simplify the open_handler loop. Can't think of another reason why I
+ * coded this */
 const char *get_handler_location(int index)
 {
 	if (index < 0 || index > NUM_HANDLER_LOCATIONS - 1)
@@ -88,6 +92,8 @@ const char *get_handler_location(int index)
 	return handler_locations[index];
 }
 
+
+/* Used to find a certain named event handler in several paths */
 int open_handler(char *name, int flags)
 {
 	const char *loc;
@@ -107,6 +113,9 @@ int open_handler(char *name, int flags)
 	return -1;
 }
 
+/* Tries to find an input handler that has a certain vendor and product
+ * ID associated with it. type determines whether it is a mouse or keyboard
+ * input handler that is being searched. */
 int find_handler(int flags, int vendor, int product, int type)
 {
 	int i, fd;
@@ -119,22 +128,24 @@ int find_handler(int flags, int vendor, int product, int type)
 		sprintf(name, "event%d", i);
 		if ((fd = open_handler(name, flags)) < 0)
 			continue;
-		ioctl(fd, EVIOCGID, id);
+		ioctl(fd, EVIOCGID, id); /* Extract IDs */
 		if (vendor == id[ID_VENDOR] && product == id[ID_PRODUCT])
 		{
 			ioctl(fd, EVIOCGBIT(0, EV_MAX), bit);
 			if (((test_bit(EV_KEY, bit) && test_bit(EV_ABS, bit)) && type == TYPE_KBD))
 			{
-				return fd;
+				return fd; /* A keyboard handler found with correct IDs */
 			}
 			else if ((test_bit(EV_REL, bit)) && type == TYPE_MOUSE)
-				return fd;
+				return fd; /* A mouse handler found with correct IDs */
 		}
 		close(fd);
 	}
-	return -1;
+	return -1; /* No such handler found */
 }
 
+/* Find the btnx_event structure that is associated with a captured rawcode
+ * and return its index. */
 int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 {
 	int i=0;
@@ -144,16 +155,17 @@ int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 		if (bevs[i]->rawcode == rawcode)
 		{
 			if (bevs[i]->enabled == 0)
-				return -1;
+				return -1; /* associated rawcode found, but event is disabled */
 			bevs[i]->pressed = pressed;
-			return i;
+			return i; /* rawcode found and event is enabled */
 		}
 		i++;
 	}
-	
-	return -1;
+	/* no such rawcode in configuration */
+	return -1; 
 }
 
+/* Extract the rawcode(s) of an input event. */
 hexdump *btnx_event_read(int fd)
 {
 	static hexdump codes[MAX_RAWCODES];
@@ -184,7 +196,7 @@ hexdump *btnx_event_read(int fd)
 	return codes;
 }
 
-
+/* Execute a shell script or binary file */
 void command_execute(btnx_event *bev)
 {
 	int pid;
@@ -202,6 +214,8 @@ void command_execute(btnx_event *bev)
 	return;
 }
 
+/* Special events, like wheel scrolls and command executions need to be
+ * handled differently. They use this function. */
 void send_extra_event(btnx_event **bevs, int index)
 {
 	int tmp_kc = bevs[index]->keycode;
@@ -212,14 +226,21 @@ void send_extra_event(btnx_event **bevs, int index)
 		return;
 	}
 	
+	/* Perform a "button down" and "button up" event for relative events
+	 * such as wheel scrolls. */
 	bevs[index]->pressed = 1;
 	uinput_key_press(bevs[index]);
 	bevs[index]->pressed = 0;
+	/* Don't remember why the KEY_UNKNOWN is necessary. */
 	bevs[index]->keycode = KEY_UNKNOWN;
 	uinput_key_press(bevs[index]);
 	bevs[index]->keycode = tmp_kc;
 }
 
+/* This function checks if there has been sufficient delay between two
+ * occurrances of the same event. Delay is in milliseconds, defined in the
+ * configuration file. 
+ * Returns 0 if delay is satisfied, -1 if there has not been enough delay. */
 static int check_delay(btnx_event *bev)
 {
 	struct timeval now;
@@ -235,18 +256,19 @@ static int check_delay(btnx_event *bev)
 	return -1;
 }
 
-static void create_pid_file(void)
+static void append_pid(void)
 {
 	int fd;
-	char tmp[8];
+	char tmp[10];
 	
-	if ((fd = open(PID_FILE, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
+	/* Open for write with -rw-r--r-- permissions */
+	if ((fd = open(PID_FILE, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
 	{
 		fprintf(stderr, "Warning: failed to create pid file %s: %s\n", 
 				PID_FILE, strerror(errno));
 		return;	
 	}
-	sprintf(tmp, "%d", getpid());
+	sprintf(tmp, "%d ", getpid());
 	if ((write(fd, tmp, strlen(tmp))) < strlen(tmp))
 	{
 		fprintf(stderr, "Warning: write error to pid file %s: %s\n",
@@ -255,6 +277,7 @@ static void create_pid_file(void)
 	close(fd);
 }
 
+/* Parses command line arguments. */
 static void main_args(int argc, char *argv[], int *bg)
 {
 	if (argc > 1)
@@ -294,8 +317,7 @@ int main(int argc, char *argv[])
 	
 	main_args(argc, argv, &bg);
 	
-	if (bg) daemon(0,0);
-	create_pid_file();
+	append_pid();
 	
 	if (system("modprobe uinput") != 0)
 	{
@@ -332,6 +354,9 @@ module is loaded before running btnx. If it's already running, no problem.\n");
 	revoco_launch();
 	
 	fprintf(stderr, "No startup errors\n");
+	
+	if (bg) daemon(0,0);
+	append_pid();
 	
 	for (;;)
 	{

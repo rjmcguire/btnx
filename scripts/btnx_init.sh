@@ -25,7 +25,7 @@ SCRIPTNAME=/etc/init.d/$NAME
 LOG=/etc/btnx/$NAME.log
 
 # Exit if the package is not installed
-[ -x "$DAEMON" ] || exit 0
+[ -x "$DAEMON" ] || exit 5
 
 # Define LSB log_* functions.
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
@@ -55,10 +55,19 @@ do_stop()
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
 	
-	killproc -p $PIDFILE $DAEMON SIGKILL
-	[ "$?" = 2 ] && return 2
+	while [ -e $PIDFILE ]
+	do
+
+		killproc -p $PIDFILE $DAEMON SIGKILL
+		RETVAL="$?"
+		sed -i 's/[0-9]* //' $PIDFILE
+		[ -s $PIDFILE ] || rm -f $PIDFILE
+		[ $RETVAL = 2 ] && return 2
+	done
+
 	# Many daemons don't delete their pidfiles when they exit.
 	rm -f $PIDFILE
+
 	return 0
 }
 
@@ -77,18 +86,35 @@ do_reload() {
 case "$1" in
   start)
 	echo "Starting $NAME :" "$DESC" >&2
+	#if [ -e $PIDFILE ]; then
+	#	log_success_msg "btnx already running"
+	#	exit 0	
+	#fi
+	do_stop
 	do_start
 	case "$?" in
-		0|1) log_success_msg "btnx successfully started" ;;
-		2) log_failure_msg "btnx failed to start" ;;
+		0|1) 
+			log_success_msg "btnx successfully started" 
+			exit 0
+			;;
+		2) 
+			log_failure_msg "btnx failed to start" 
+			exit 1
+			;;
 	esac
 	;;
   stop)
 	echo "Stopping $NAME :" "$DESC" >&2
 	do_stop
 	case "$?" in
-		0|1) log_success_msg "btnx successfully stopped" ;;
-		2) log_failure_msg "btnx failed to stop" ;;
+		0|1) 
+			log_success_msg "btnx successfully stopped" 
+			exit 0
+			;;
+		2) 
+			log_failure_msg "btnx failed to stop" 
+			exit 1
+			;;
 	esac
 	;;
   #reload|force-reload)
@@ -112,14 +138,18 @@ case "$1" in
 	  	log_success_msg "btnx successfully stopped"
 		do_start
 		case "$?" in
-			0|1) log_success_msg "btnx successfully started" ;;
-			2) log_failure_msg "btnx failed to stop during restart"
+			0|1) 
+				log_success_msg "btnx successfully started" 
+				exit 0 ;;
+			2) 
+				log_failure_msg "btnx failed to start during restart" 
+				exit 1 ;;
 		esac
 		;;
 	  *)
 	  	# Failed to stop
 		log_failure_msg "btnx failed to stop during restart"
-		;;
+		exit 1 ;;
 	esac
 	;;
   *)
