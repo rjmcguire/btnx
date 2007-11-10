@@ -8,6 +8,8 @@
 
 SCRIPT_DIR=/etc/init.d
 SCRIPT_INIT=btnx_init.sh
+INIT_PROG=
+INIT_DEL=
 DATA_DIR=data
 NAME=btnx
 BIN_DIR=/usr/sbin
@@ -17,6 +19,29 @@ CONFIG=btnx_config
 EVENTS=events
 UDEV_DIR=/etc/udev/rules.d
 UDEV=99-btnx.rules
+
+function find_file_path {
+	local IFS=:
+	for PATH_DIR in $1; do
+		for FP in $PATH_DIR/$2; do
+			[ -x "$FP" ] && return 1;
+		done
+	done
+	return 0;
+}
+
+find_file_path $PATH update-rc.d
+if [ $? == 1 ]; then
+	INIT_PROG="update-rc.d"
+	INIT_DEL="update-rc.d -f $NAME remove > /dev/null"
+fi
+if [ -z $INIT_PROG ]; then
+	find_file_path $PATH chkconfig
+	if [ $? == 1 ]; then
+		INIT_PROG=chkconfig
+		INIT_DEL="chkconfig --del $NAME"
+	fi
+fi
 
 echo "Please wait a while for the btnx daemon to stop."
 
@@ -32,6 +57,10 @@ if [ -d $CONFIG_DIR ]; then
 		echo "Error: could not remove $CONFIG_DIR. Are you root?"
 	fi
 fi
+echo -ne "."
+
+# Unregister the daemon
+$INIT_DEL
 echo -ne "."
 
 # Remove the binary file
@@ -50,7 +79,7 @@ if [ -f $SCRIPT_DIR/$NAME ]; then
 		echo "Error: could not remove $SCRIPT_DIR/$NAME."
 	fi
 fi
-echo "."
+echo -ne "."
 
 # Remove udev
 if [ -f $UDEV_DIR/$UDEV ]; then
@@ -60,9 +89,6 @@ if [ -f $UDEV_DIR/$UDEV ]; then
 	fi
 fi
 echo "."
-
-# Unregister the daemon
-#update-rc.d -f $NAME remove > /dev/null
 
 
 echo "Done. $NAME successfully uninstalled."

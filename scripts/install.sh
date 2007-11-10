@@ -7,6 +7,9 @@
 #################################################
 
 INIT_DIR=/etc/init.d
+INIT_PROG=""
+INIT_DEL=
+INIT_ADD=
 SCRIPT_DIR=scripts
 SCRIPT_INIT=btnx_init.sh
 DATA_DIR=data
@@ -31,14 +34,47 @@ function prompt_yn {
 	done
 }
 
+function find_file_path {
+	local IFS=:
+	for PATH_DIR in $1; do
+		for FP in $PATH_DIR/$2; do
+			#echo "looking for $FP"
+			[ -x "$FP" ] && return 1;
+		done
+	done
+	return 0;
+}
+
+find_file_path $PATH update-rc.d
+if [ $? == 1 ]; then
+	#echo "found update-rc.d"
+	INIT_PROG="update-rc.d"
+	INIT_ADD="update-rc.d $NAME start 49 2 3 4 5 . stop 49 0 1 6 ."
+	INIT_DEL="update-rc.d -f $NAME remove > /dev/null"
+fi
+if [ -z $INIT_PROG ]; then
+	#echo "trying to find another prog"
+	find_file_path $PATH chkconfig
+	if [ $? == 1 ]; then
+		#echo "found chkconfig"
+		INIT_PROG=chkconfig
+		INIT_ADD="chkconfig --add $NAME"
+		INIT_DEL="chkconfig --del $NAME"
+	fi
+fi
+#exit 0
+
 echo "Installing $NAME..."
 
 # Make sure a previous btnx daemon is not running
 if [ -f $INIT_DIR/$NAME ]; then
-	echo "Existing btnx service found. Attempting to stop the service."
+	echo "Existing $NAME service found. Attempting to stop the service."
 	/etc/init.d/btnx stop 2> /dev/null
 	if [ $? -ne 0 ]; then
-		echo "* Warning: error attemping to stop existing btnx daemon. Continuing..."
+		echo "* Warning: error attemping to stop existing $NAME daemon. Continuing..."
+	else
+		echo "Unregistering previous $NAME init script."
+		$INIT_DEL
 	fi
 fi
 echo -ne "."
@@ -157,7 +193,7 @@ chmod 0744 $INIT_DIR/$NAME
 echo "."
 
 #update-rc.d $NAME start 49 2 3 4 5 . stop 49 0 1 6 . > /dev/null
-
+$INIT_ADD
 
 echo -e "$NAME has been successfully installed!\n"
 echo -e "You can type 'sudo /etc/init.d/btnx start' to start btnx if you have made a configuration file with btnx-config."

@@ -278,27 +278,33 @@ static void append_pid(void)
 }
 
 /* Parses command line arguments. */
-static void main_args(int argc, char *argv[], int *bg)
+static void main_args(int argc, char *argv[], int *bg, int *log)
 {
 	if (argc > 1)
 	{
-		if (!strncmp(argv[1], "-b", 2))
-			*bg=1;
-		else if (!strncmp(argv[1], "-v", 2))
+		int x;
+		for (x=1; x<argc; x++)
 		{
-			printf(	PROGRAM_NAME " v." PROGRAM_VERSION "\n"
-					"Author: Olli Salonen <oasalonen@gmail.com>\n"
-					"Compatible with btnx-config >= v.0.2.0\n");
-			exit(0);	
-		}
-		else
-		{
-			printf(	PROGRAM_NAME " usage:\n"
-					"Argument:\tDescription:\n"
-					"-v\t\tPrint version number\n"
-					"-b\t\tRun process as a background daemon\n"
-					"-h\t\tPrint this text\n");
-			exit(0);
+			if (!strncmp(argv[x], "-b", 2))
+				*bg=1;
+			else if (!strncmp(argv[x], "-v", 2))
+			{
+				printf(	PROGRAM_NAME " v." PROGRAM_VERSION "\n"
+						"Author: Olli Salonen <oasalonen@gmail.com>\n"
+						"Compatible with btnx-config >= v.0.2.0\n");
+				exit(0);	
+			}
+			else if (!strncmp(argv[x], "-l", 2))
+				*log = 1;
+			else
+			{
+				printf(	PROGRAM_NAME " usage:\n"
+						"Argument:\tDescription:\n"
+						"-v\t\tPrint version number\n"
+						"-b\t\tRun process as a background daemon\n"
+						"-h\t\tPrint this text\n");
+				exit(0);
+			}
 		}
 	}
 }
@@ -313,11 +319,18 @@ int main(int argc, char *argv[])
 	int bev_index;
 	int i;
 	int suppress_release=1;
-	int bg=0;
+	int bg=0, log=0;
 	
-	main_args(argc, argv, &bg);
+	main_args(argc, argv, &bg, &log);
 	
 	append_pid();
+	
+	if (log)
+	{
+		//fclose(stderr);
+		stderr = freopen("/etc/btnx/btnx_log", "a", stderr);
+		fprintf(stderr, "btnx started\n");
+	}
 	
 	if (system("modprobe uinput") != 0)
 	{
@@ -355,6 +368,12 @@ module is loaded before running btnx. If it's already running, no problem.\n");
 	
 	fprintf(stderr, "No startup errors\n");
 	
+	if (log)
+	{
+		fclose(stderr);
+		stderr = fdopen(STDERR_FILENO, "w");
+	}
+		
 	if (bg) daemon(0,0);
 	append_pid();
 	

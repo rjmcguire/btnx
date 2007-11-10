@@ -3,12 +3,18 @@
 # Provides:          btnx
 # Required-Start:    $local_fs $remote_fs
 # Required-Stop:     $local_fs $remote_fs
-# Default-Start:     5
-# Default-Stop:      0 1 2 3 4 6
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
 # Short-Description: Mouse button rerouter daemon.
 # Description:       Captures events from the mouse and
 #                    reroutes them through uinput as other user-defined events.
 ### END INIT INFO
+
+## BEGIN CHKCONFIG
+# chkconfig: 2345 49 49
+# description: Captures events from the mouse and \
+#              reroutes them through uinput as other user-defined events.
+## END CHKCONFIG
 
 # Author: Olli Salonen <oasalonen@gmail.com>
 
