@@ -30,6 +30,8 @@ function find_file_path {
 	return 0;
 }
 
+PATH=$PATH:/sbin:/usr/sbin:/usr/local/sbin
+
 find_file_path $PATH update-rc.d
 if [ $? == 1 ]; then
 	INIT_PROG="update-rc.d"
@@ -60,7 +62,8 @@ fi
 echo -ne "."
 
 # Unregister the daemon
-$INIT_DEL
+echo -e "\nUnregistering init scripts."
+[ -n $INIT_PROG ] && $INIT_DEL
 echo -ne "."
 
 # Remove the binary file

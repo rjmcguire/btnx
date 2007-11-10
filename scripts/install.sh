@@ -45,6 +45,8 @@ function find_file_path {
 	return 0;
 }
 
+PATH=$PATH:/sbin:/usr/sbin:/usr/local/sbin
+
 find_file_path $PATH update-rc.d
 if [ $? == 1 ]; then
 	#echo "found update-rc.d"
@@ -74,7 +76,7 @@ if [ -f $INIT_DIR/$NAME ]; then
 		echo "* Warning: error attemping to stop existing $NAME daemon. Continuing..."
 	else
 		echo "Unregistering previous $NAME init script."
-		$INIT_DEL
+		[ -n $INIT_PROG ] && $INIT_DEL
 	fi
 fi
 echo -ne "."
@@ -193,7 +195,11 @@ chmod 0744 $INIT_DIR/$NAME
 echo "."
 
 #update-rc.d $NAME start 49 2 3 4 5 . stop 49 0 1 6 . > /dev/null
-$INIT_ADD
+if [ -n $INIT_PROG ]; then
+	$INIT_ADD
+else
+	echo "$NAME daemon init script could not be registered: No known init script installation utility was found. Looked for update-rc.d and chkconfig. If your distro uses a different script installation utility, make a request for support."
+fi
 
 echo -e "$NAME has been successfully installed!\n"
 echo -e "You can type 'sudo /etc/init.d/btnx start' to start btnx if you have made a configuration file with btnx-config."
