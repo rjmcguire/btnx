@@ -12,8 +12,7 @@
 
 ## BEGIN CHKCONFIG
 # chkconfig: 2345 49 49
-# description: Captures events from the mouse and \
-#              reroutes them through uinput as other user-defined events.
+# description: Mouse button rerouter daemon.
 ## END CHKCONFIG
 
 # Author: Olli Salonen <oasalonen@gmail.com>
@@ -29,9 +28,19 @@ DAEMON_ARGS=""
 PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 LOG=/etc/btnx/$NAME.log
+FAIL_STATUS=6
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 5
+
+# Check for event handlers. This prevents udev from trying to fire up btnx
+# multiple times <--- CONFIRM
+EVENT=/dev/input/event* /dev/event* 2> /dev/null
+EVENT_EXISTS=0
+for file_name in $EVENT; do
+	[ -e $file_name ] && EVENT_EXISTS=1
+done
+[ EVENT_EXISTS == 0 ] && exit FAIL_STATUS
 
 # Define LSB log_* functions.
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
@@ -106,7 +115,7 @@ case "$1" in
 			;;
 		2) 
 			log_failure_msg "btnx failed to start" 
-			exit 1
+			exit $FAIL_STATUS
 			;;
 	esac
 	;;
@@ -120,7 +129,7 @@ case "$1" in
 			;;
 		2) 
 			log_failure_msg "btnx failed to stop" 
-			exit 1
+			exit $FAIL_STATUS
 			;;
 	esac
 	;;
@@ -150,13 +159,13 @@ case "$1" in
 				exit 0 ;;
 			2) 
 				log_failure_msg "btnx failed to start during restart" 
-				exit 1 ;;
+				exit $FAIL_STATUS ;;
 		esac
 		;;
 	  *)
 	  	# Failed to stop
 		log_failure_msg "btnx failed to stop during restart"
-		exit 1 ;;
+		exit $FAIL_STATUS ;;
 	esac
 	;;
   *)
