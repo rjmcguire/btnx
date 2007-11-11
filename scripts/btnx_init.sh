@@ -33,14 +33,10 @@ FAIL_STATUS=6
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 5
 
-# Check for event handlers. This prevents udev from trying to fire up btnx
-# multiple times <--- CONFIRM
-EVENT=/dev/input/event* /dev/event* 2> /dev/null
-EVENT_EXISTS=0
-for file_name in $EVENT; do
-	[ -e $file_name ] && EVENT_EXISTS=1
-done
-[ EVENT_EXISTS == 0 ] && exit FAIL_STATUS
+# If LSB init-functions use start-stop-daemon, use full path for launching
+# daemon through start_daemon. Otherwise, just give the name of the executable.
+cat /lib/lsb/init-functions | grep start-stop-daemon > /dev/null
+[ $? -eq 1 ] && DAEMON=$NAME
 
 # Define LSB log_* functions.
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
@@ -56,7 +52,7 @@ do_start()
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
 	
-	start_daemon $NAME -b || return 2
+	start_daemon $DAEMON -b || return 2
 }
 
 #
@@ -72,7 +68,7 @@ do_stop()
 	I=100
 	while [ -e $PIDFILE ]
 	do
-		killproc -p $PIDFILE $NAME SIGKILL
+		killproc -p $PIDFILE $DAEMON SIGKILL
 		RETVAL="$?"
 		sed -i 's/[0-9]* //' $PIDFILE
 		[ -s $PIDFILE ] || rm -f $PIDFILE
