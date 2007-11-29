@@ -1,0 +1,39 @@
+btnx ChangeLog
+
+2007-11-29	v.0.4.0
+	* Compatible with btnx-config 0.4.0
+	* Added support for multiple configurations.
+	* Allows switching configurations during with a button event.
+	Restarts itself with the correct configuration.
+	* Locks PID file while writing and reading it during start up.
+	* Kills all previous btnx processes found in the PID file during start up.
+	* Support for "Force immediate button release" setting. Sends an immediate
+	button release signal after the button pressed signal. Buttons with this
+	option cannot be held down.
+
+2007-11-11	v.0.3.3
+	* Init bug fixes.
+	* LSB compliant init scripts.
+	* Forks to background using daemon() with command line argument -b.
+	* Log file output with command line argument -l.
+	* Appends PID to PID file.
+
+2007-10-15	v.0.3.2
+	* Integrated revoco.
+	* Command line argument support.
+
+2007-08-12	v.0.3.1
+	* Support for hotplugging.
+	* Updated Makefile (no more generic installation targets).
+	* Removed deprecated default configuration files.
+
+2007-07-06	v.0.3.0
+	* First release of the new btnx.
+	* Deprecates the v.0.2.x operation model, it is no longer maintained. No
+	more hexdumps will be accepted or added to v.0.2.x.
+	* No more automatic device detection or device hexdumps. The mouse and
+	its buttons are detected and by btnx-config. No more text file editing.
+	* Dependent btnx-config
+
+2007-07-06	v.0.2.14
+	* Final release of the old btnx branch.
