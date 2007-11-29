@@ -51,6 +51,7 @@
 #include <sys/ioctl.h>
 
 #include "revoco.h"
+#include "btnx.h"
 
 #define streq(a,b)	(strcmp((a), (b)) == 0)
 #define strneq(a,b,c)	(strncmp((a), (b), (c)) == 0)
@@ -124,7 +125,6 @@ fatal(const char *fmt, ...)
     vfprintf(stderr, fmt, args);
     fprintf(stderr, "\n");
     va_end(args);
-    //exit(1);
 }
 
 static int
@@ -229,7 +229,7 @@ trouble_shooting(void)
     char *path;
     int fd;
 
-	fprintf(stderr, "revoco launch failed. If the problem persists, disable"
+	fprintf(stderr, OUT_PRE "revoco launch failed. If the problem persists, disable"
 					"revoco from btnx-config. revoco error message:\n");
 
     fd = open(path = "/dev/hiddev0", O_RDWR);
@@ -323,12 +323,12 @@ int revoco_launch(void)
     
     if (revoco_mode == REVOCO_DISABLED)
     {
-    	fprintf(stderr, "revoco not started. Disabled in configuration.\n");
+    	fprintf(stderr, OUT_PRE "revoco not started. Disabled in configuration.\n");
     	return 0;
     }
     if (revoco_check_values() < 0)
     {
-    	fprintf(stderr, "Attempted to pass illegal values to revoco. revoco "
+    	fprintf(stderr, OUT_PRE "Attempted to pass illegal values to revoco. revoco "
     					"will not be started.\n");
     	return -1;
     }

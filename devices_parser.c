@@ -19,6 +19,7 @@
 #include "devices_parser.h"
 #include "device.h"
 
+/*
 #define DD_BUFFER_SIZE			128
 #define SEARCH_STRING_SIZE		64
 
@@ -149,4 +150,4 @@ char *get_event(char *loc_beg, char *event)
 	//strcat(event, loc_beg);
 	return event;
 }
-
+*/

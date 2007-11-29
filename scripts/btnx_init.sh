@@ -29,6 +29,7 @@ PIDFILE=/var/run/$NAME.pid
 SCRIPTNAME=/etc/init.d/$NAME
 LOG=/etc/btnx/$NAME.log
 FAIL_STATUS=6
+ARG_CONFIG=
 
 # Exit if the package is not installed
 [ -x "$DAEMON" ] || exit 5
@@ -42,6 +43,12 @@ cat /lib/lsb/init-functions | grep start-stop-daemon > /dev/null
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
 . /lib/lsb/init-functions
 
+if [ -z $2 ]; then # empty string
+	ARG_CONFIG=""
+else
+	ARG_CONFIG="-c \"$2\""
+fi
+
 #
 # Function that starts the daemon/service
 #
@@ -52,7 +59,8 @@ do_start()
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
 	
-	start_daemon $DAEMON -b || return 2
+	start_daemon $DAEMON -b $ARG_CONFIG #|| return 2
+	return $?
 }
 
 #
@@ -104,14 +112,15 @@ case "$1" in
 	#fi
 	do_stop
 	do_start
-	case "$?" in
-		0|1) 
+	RET=$?
+	case "$RET" in
+		0) 
 			log_success_msg "btnx successfully started" 
 			exit 0
 			;;
-		2) 
+		*) 
 			log_failure_msg "btnx failed to start" 
-			exit $FAIL_STATUS
+			exit $RET
 			;;
 	esac
 	;;
@@ -149,13 +158,14 @@ case "$1" in
 	  0|1)
 	  	log_success_msg "btnx successfully stopped"
 		do_start
-		case "$?" in
-			0|1) 
+		RET=$?
+		case "$RET" in
+			0) 
 				log_success_msg "btnx successfully started" 
 				exit 0 ;;
-			2) 
+			*) 
 				log_failure_msg "btnx failed to start during restart" 
-				exit $FAIL_STATUS ;;
+				exit $RET ;;
 		esac
 		;;
 	  *)

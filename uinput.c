@@ -36,14 +36,14 @@ int uinput_init(const char *dev_name)
   uinput_mouse_fd = open_handler("uinput", O_WRONLY | O_NDELAY);	//open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
   if (uinput_mouse_fd < 0) 
   {
-    perror("Error opening the uinput device.\nMake sure you have loaded the uinput module (modprobe uinput)");
-    exit(EXIT_FAILURE);
+    perror(OUT_PRE "Error opening the uinput device.\nMake sure you have loaded the uinput module (modprobe uinput)");
+    exit(BTNX_ERROR_OPEN_UINPUT);
   }
   uinput_kbd_fd = open_handler("uinput", O_WRONLY | O_NDELAY);	//open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
   if (uinput_kbd_fd < 0) 
   {
-    perror("Error opening the uinput device");
-    exit(EXIT_FAILURE);
+    perror(OUT_PRE "Error opening the uinput device");
+    exit(BTNX_ERROR_OPEN_UINPUT);
   }
 
   memset(&dev_mouse, 0, sizeof(dev_mouse));
@@ -98,7 +98,7 @@ void uinput_key_press(struct btnx_event *bev)
 	
 	if (uinput_mouse_fd < 0 || uinput_kbd_fd < 0)
 	{
-		fprintf(stderr, "Warning: uinput_fd not valid\n");
+		fprintf(stderr, OUT_PRE "Warning: uinput_fd not valid\n");
 		return;
 	}
 	

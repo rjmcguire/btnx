@@ -28,7 +28,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.3.3"
+#define PROGRAM_VERSION	"0.4.0"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -39,9 +39,11 @@
 #include <sys/select.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 #include <linux/input.h>
 #include <errno.h>
 #include <signal.h>
+#include <ctype.h>
 
 #include "uinput.h"
 #include "btnx.h"
@@ -74,6 +76,9 @@
 #define test_bit(bit, array) ((array[LONG(bit)] >> OFF(bit)) & 1)
 /* End mouseemu macros */
 
+static char *g_exec_path=NULL;
+struct timeval exec_time; // time when daemon was executed.
+
 /* Possible paths of event handlers */
 const char handler_locations[][15] =
 {
@@ -105,7 +110,7 @@ int open_handler(char *name, int flags)
 		sprintf(loc_buffer, "%s/%s", loc, name);
 		if ((fd = open(loc_buffer, flags)) >= 0)
 		{
-			printf("Opened handler: %s\n", loc_buffer);
+			printf(OUT_PRE "Opened handler: %s\n", loc_buffer);
 			return fd;
 		}
 	}
@@ -208,10 +213,49 @@ void command_execute(btnx_event *bev)
 	}
 	else if (pid < 0)
 	{
-		fprintf(stderr, "Error: could not fork: %s\n", strerror(errno));
+		fprintf(stderr, OUT_PRE "Error: could not fork: %s\n", strerror(errno));
 		return;
 	}
 	return;
+}
+
+void config_switch(btnx_event *bev)
+{
+	char *name;
+	struct timeval now;
+	
+	/* block in case last config switch button is the same as a current one
+	 * this helps prevent a situation where configurations switch multiple
+	 * times */
+	gettimeofday(&now, NULL);
+	if (((int)(((unsigned int)now.tv_sec - (unsigned int)exec_time.tv_sec) * 1000) +
+		(int)(((int)now.tv_usec - (int)exec_time.tv_usec) / 1000))
+		< (int)500)
+			return;
+	/* ------------------------------------------------------------------- */
+	
+	switch (bev->switch_type)
+	{
+	case CONFIG_SWITCH_NEXT:
+		name = config_get_next();
+		break;
+	case CONFIG_SWITCH_PREV:
+		name = config_get_prev();
+		break;
+	case CONFIG_SWITCH_TO:
+		name = bev->switch_name;
+	}
+	
+	if (name == NULL)
+	{
+		fprintf(stderr, OUT_PRE "Warning: config switch failed. Invalid configuration "
+				"name.\n");
+		return;
+	}
+	
+	printf(OUT_PRE "switching to config: %s\n", name);
+	
+	execl(g_exec_path, g_exec_path, "-c", name, (char *) NULL);
 }
 
 /* Special events, like wheel scrolls and command executions need to be
@@ -223,6 +267,11 @@ void send_extra_event(btnx_event **bevs, int index)
 	if (tmp_kc == COMMAND_EXECUTE)
 	{
 		command_execute(bevs[index]);
+		return;
+	}
+	if (tmp_kc == CONFIG_SWITCH)
+	{
+		config_switch(bevs[index]);
 		return;
 	}
 	
@@ -256,30 +305,108 @@ static int check_delay(btnx_event *bev)
 	return -1;
 }
 
-static void append_pid(void)
+static void kill_pids(int fd)
 {
-	int fd;
-	char tmp[10];
+	char tmp[16];
+	int x=0, len;
+	pid_t pid;
+	
+	if (fd < 0)
+	{
+		fprintf(stderr, OUT_PRE "Warning: kill_pids was passed an invalid fd.\n");
+		return;
+	}
+	
+	lseek(fd, 0, SEEK_SET);
+	memset(tmp, '\0', 15);
+	while (x<15)
+	{
+		while (tmp[x] == '\0')
+		{
+			if ((len = read(fd, tmp+x, 1)) < 0)
+			{
+				fprintf(stderr, OUT_PRE "Error: kill_pids read error: %s\n",
+						strerror(errno));
+				exit(BTNX_ERROR_FATAL);
+			}
+			if (len == 0)
+				break;
+		}
+		//printf(OUT_PRE "len: %d\n", len);
+		if (x==0 && (tmp[x] == '\0' || tmp[x] == EOF))
+			break;
+		if (!isdigit(tmp[x]))
+		{
+			tmp[x+1] = '\0';
+			pid = (pid_t)strtol(tmp, NULL, 10);
+			if (pid >= 1 && pid != getpid())
+			{
+				if (kill(pid, SIGKILL) < 0)
+				{
+					fprintf(stderr, OUT_PRE "Warning: could not kill previous btnx process: %d\n: %s",
+							pid, strerror(errno));
+				}
+			}
+			else
+				fprintf(stderr, OUT_PRE "previous btnx process killed.\n");
+			if (tmp[x] == '\0' || tmp[x] == EOF)
+				break;
+			memset(tmp, '\0', 15);
+			x=0;
+			continue;
+		}
+		x++;
+	}
+	if (x >= 15)
+		fprintf(stderr, OUT_PRE "Warning: kill_pids pid overflow.\n");
+	ftruncate(fd, 0);
+	close(fd);
+}
+
+static void append_pid(int kill_old)
+{
+	int fd, flags;
+	char tmp[16];
+	
+	if (kill_old == 1)
+		flags = O_RDWR | O_CREAT;
+	else
+		flags = O_WRONLY | O_CREAT | O_APPEND;
 	
 	/* Open for write with -rw-r--r-- permissions */
-	if ((fd = open(PID_FILE, O_WRONLY | O_CREAT | O_APPEND, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
+	if ((fd = open(PID_FILE, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
 	{
-		fprintf(stderr, "Warning: failed to create pid file %s: %s\n", 
+		fprintf(stderr, OUT_PRE "Warning: failed to create pid file %s: %s\n", 
 				PID_FILE, strerror(errno));
 		return;	
 	}
+	/* Lock the file for this process, or wait for lock release */
+	if (flock(fd, LOCK_EX))
+	{
+		fprintf(stderr, OUT_PRE "Error: pid file lock set failed.\n");
+		close(fd);
+		exit(BTNX_ERROR_FATAL);
+	}
+	/* Kill old processes */
+	if (kill_old == 1)
+		kill_pids(fd);
+	
+	/* Append pid */
 	sprintf(tmp, "%d ", getpid());
 	if ((write(fd, tmp, strlen(tmp))) < strlen(tmp))
 	{
-		fprintf(stderr, "Warning: write error to pid file %s: %s\n",
+		fprintf(stderr, OUT_PRE "Warning: write error to pid file %s: %s\n",
 				PID_FILE, strerror(errno));
 	}
+	flock(fd, LOCK_UN);
 	close(fd);
 }
 
 /* Parses command line arguments. */
-static void main_args(int argc, char *argv[], int *bg, int *log)
+static void main_args(int argc, char *argv[], int *bg, int *log, char **config_file)
 {
+	g_exec_path = argv[0];
+	
 	if (argc > 1)
 	{
 		int x;
@@ -291,19 +418,41 @@ static void main_args(int argc, char *argv[], int *bg, int *log)
 			{
 				printf(	PROGRAM_NAME " v." PROGRAM_VERSION "\n"
 						"Author: Olli Salonen <oasalonen@gmail.com>\n"
-						"Compatible with btnx-config >= v.0.2.0\n");
-				exit(0);	
+						"Compatible with btnx-config >= v.0.4.0\n");
+				exit(BTNX_EXIT_NORMAL);	
+			}
+			else if (!strncmp(argv[x], "-c", 2))
+			{
+				if (x < argc - 1)
+				{
+					if (strlen(argv[x+1]) >= CONFIG_NAME_MAX_SIZE)
+					{
+						fprintf(stderr, OUT_PRE "Error: invalid configuration name.\n");
+						goto usage;
+					}
+					*config_file = (char *) malloc((strlen(argv[x+1])+1) * sizeof(char));
+					strcpy(*config_file, argv[x+1]);
+					x++;
+				}
+				else
+				{
+					fprintf(stderr, OUT_PRE "Error: -c argument used but no "
+							"configuration file name specified.\n");
+					goto usage;
+				}
 			}
 			else if (!strncmp(argv[x], "-l", 2))
 				*log = 1;
 			else
 			{
+				usage:
 				printf(	PROGRAM_NAME " usage:\n"
-						"Argument:\tDescription:\n"
-						"-v\t\tPrint version number\n"
-						"-b\t\tRun process as a background daemon\n"
-						"-h\t\tPrint this text\n");
-				exit(0);
+						"\tArgument:\tDescription:\n"
+						"\t-v\t\tPrint version number\n"
+						"\t-b\t\tRun process as a background daemon\n"
+						"\t-c CONFIG\tRun with specified configuration\n"
+						"\t-h\t\tPrint this text\n");
+				exit(BTNX_ERROR_FATAL);
 			}
 		}
 	}
@@ -320,43 +469,50 @@ int main(int argc, char *argv[])
 	int i;
 	int suppress_release=1;
 	int bg=0, log=0;
+	char *config_name=NULL;
 	
-	main_args(argc, argv, &bg, &log);
+	main_args(argc, argv, &bg, &log, &config_name);
 	
-	append_pid();
+	append_pid(1);
 	
 	if (log)
 	{
-		//fclose(stderr);
+		/* Redirect stderr output to a log file */
 		stderr = freopen("/etc/btnx/btnx_log", "a", stderr);
-		fprintf(stderr, "btnx started\n");
+		fprintf(stderr, OUT_PRE "btnx started\n");
 	}
 	
 	if (system("modprobe uinput") != 0)
 	{
-		fprintf(stderr, "Warning: modprobe uinput failed. Make sure the uinput \
-module is loaded before running btnx. If it's already running, no problem.\n");
+		fprintf(stderr, OUT_PRE "Warning: modprobe uinput failed. Make sure the uinput "
+				"module is loaded before running btnx. If it's already running,"
+				" no problem.\n");
 	}
 	else
-		printf("uinput modprobed successfully.\n");
+		printf(OUT_PRE "uinput modprobed successfully.\n");
 	
-	bevs = config_parse();
+	bevs = config_parse(config_name);
 	
 	if (bevs == NULL)
 	{
-		fprintf(stderr, "Error: configuration file error.\n");
-		exit(1);
+		fprintf(stderr, OUT_PRE "Error: configuration file error.\n");
+		exit(BTNX_ERROR_NO_CONFIG);
 	}
 	
-	fd_ev_btn = find_handler(O_RDONLY, device_get_vendor_id(), device_get_product_id(), TYPE_MOUSE);
+	fd_ev_btn = find_handler(	O_RDONLY,
+								device_get_vendor_id(),
+								device_get_product_id(),
+								TYPE_MOUSE);
 	if (fd_ev_btn < 0)
 	{
-		fprintf(stderr, "Error opening button event file descriptor: %s\n", 
+		fprintf(stderr, OUT_PRE "Error opening button event file descriptor: %s\n", 
 				strerror(errno));
-		exit(EXIT_FAILURE);
+		exit(BTNX_ERROR_OPEN_HANDLER);
 	}
-	fd_ev_key = find_handler(O_RDONLY, device_get_vendor_id(), device_get_product_id(), TYPE_KBD);
-	
+	fd_ev_key = find_handler(	O_RDONLY, 
+								device_get_vendor_id(), 
+								device_get_product_id(), 
+								TYPE_KBD);
 	uinput_init("btnx");
 	
 	if (fd_ev_btn > fd_ev_key)
@@ -366,7 +522,7 @@ module is loaded before running btnx. If it's already running, no problem.\n");
 	
 	revoco_launch();
 	
-	fprintf(stderr, "No startup errors\n");
+	fprintf(stderr, OUT_PRE "No startup errors\n");
 	
 	if (log)
 	{
@@ -375,7 +531,9 @@ module is loaded before running btnx. If it's already running, no problem.\n");
 	}
 		
 	if (bg) daemon(0,0);
-	append_pid();
+	append_pid(0);
+	
+	gettimeofday(&exec_time, NULL);
 	
 	for (;;)
 	{
@@ -387,7 +545,7 @@ module is loaded before running btnx. If it's already running, no problem.\n");
 		ready = select(max_fd+1, &fds, NULL, NULL, NULL);	
 		
 		if (ready == -1)
-			perror("select() error");
+			perror(OUT_PRE "select() error");
 		else if (ready == 0)
 			continue;
 		else
@@ -416,6 +574,10 @@ module is loaded before running btnx. If it's already running, no problem.\n");
 							continue;
 						gettimeofday(&(bevs[bev_index]->last), NULL);
 					}
+					/* Force release, ignore button release */
+					if (bevs[bev_index]->type == BUTTON_IMMEDIATE &&
+						bevs[bev_index]->pressed == 0)
+						continue;
 					if (bevs[bev_index]->type == BUTTON_IMMEDIATE && 
 						bevs[bev_index]->keycode < BTNX_EXTRA_EVENTS)
 					{
