@@ -3,7 +3,7 @@ btnx ChangeLog
 2007-11-29	v.0.4.0
 	* Compatible with btnx-config 0.4.0
 	* Added support for multiple configurations.
-	* Allows switching configurations during with a button event.
+	* Allows switching configurations with a button event.
 	Restarts itself with the correct configuration.
 	* Locks PID file while writing and reading it during start up.
 	* Kills all previous btnx processes found in the PID file during start up.
