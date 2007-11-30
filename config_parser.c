@@ -6,6 +6,7 @@
 
 #define _GNU_SOURCE				// Needed for strcasestr()
 
+#include "btnx.h"
 #include "config_parser.h"
 #include "device.h"
 #include "revoco.h"
@@ -23,32 +24,35 @@
 #define CONFIG_BUTTON_END		"EndButton"
 #define MAX_BEVS	10
 
+/* Value used to indicate what type of block is currently being parsed */
 enum
 {
-	BLOCK_NONE,
-	BLOCK_MOUSE,
-	BLOCK_BUTTON
+	BLOCK_NONE,		/* Not parsing a block */
+	BLOCK_MOUSE,	/* Parsing a Mouse block */
+	BLOCK_BUTTON	/* Parsing a Button block */
 };
 
-static char next_config[CONFIG_NAME_MAX_SIZE];
-static char prev_config[CONFIG_NAME_MAX_SIZE];
-static int have_next_config=0;
-static int have_prev_config=0;
+/* Static variables */
+static char next_config[CONFIG_NAME_MAX_SIZE];	/* Name of next config */
+static char prev_config[CONFIG_NAME_MAX_SIZE];	/* Name of previous config */
+static int have_next_config=0;					/* Is next config defined? */
+static int have_prev_config=0;					/* Is previous config defined? */
 
-char *config_get_next(void)
-{
-	if (have_next_config)
-		return next_config;
-	return NULL;
-}
+/* Static function declarations */
+static inline void strip_newline(char *str, int size);
+static char *config_get_names(char *config_name);
+static const char *config_add_value(btnx_event *e, 
+									int type, 
+									const char *option, 
+									char *value);
+static void config_add_mod(btnx_event *e, int mod);
+static int config_get_keycode(const char *value);
+static char **config_split_command(char *cmd);
+static char *config_set_command(btnx_event *e, char *value);
+static void config_set_switch_type(btnx_event *e, char *value);
+static void config_set_switch_name(btnx_event *e, char *value);
 
-char *config_get_prev(void)
-{
-	if (have_prev_config)
-		return prev_config;
-	return NULL;
-}
-
+/* Strip newlines from a string. Used for config name parsing. */
 static inline void strip_newline(char *str, int size)
 {
 	int x;
@@ -57,6 +61,25 @@ static inline void strip_newline(char *str, int size)
 		if (str[x] == '\n') str[x] = '\0';
 }
 
+/* Return the name of the next configuration */
+const char *config_get_next(void)
+{
+	if (have_next_config)
+		return next_config;
+	return NULL;
+}
+
+/* Return the name of the previous configuration */
+const char *config_get_prev(void)
+{
+	if (have_prev_config)
+		return prev_config;
+	return NULL;
+}
+
+/* Parse config names from the config manager file. If no current
+ * name is set or the current name does not exist, set the current
+ * config name to the default config and return its name */
 static char *config_get_names(char *config_name)
 {
 	FILE *fp;
@@ -163,6 +186,305 @@ static char *config_get_names(char *config_name)
 	return config_name;
 }
 
+/* Converts the string representation of a keycode to its integer value */
+static int config_get_keycode(const char *value)
+{
+	FILE *fp;
+	char buffer[128];
+	char *loc_beg;
+	int len;
+	
+	/* Length is longer than any defined event */
+	if (strlen(value) > 20)
+	{
+		fprintf(stderr, OUT_PRE "Warning: possibly malformed keycode or "
+				"modifier value. Ignoring.\n");
+		return 0;
+	}
+	
+	/* Explicitly no defined keycode */
+	if (!strcasecmp(value, "none"))
+		return 0;
+	
+	/* btnx's own defined events */
+	if (!strcasecmp(value, "REL_WHEELFORWARD"))
+		return REL_WHEELFORWARD;
+	else if (!strcasecmp(value, "REL_WHEELBACK"))
+		return REL_WHEELBACK;
+	
+	/* use cat and grep to our advantage here to find the keycode in the
+	 * events file */
+	sprintf(buffer, "cat %s/%s | /bin/grep %s", CONFIG_PATH, EVENTS_NAME, value);
+	fp = popen(buffer, "r");
+	while (fgets(buffer, 127, fp) != NULL)
+	{
+		len = strlen(buffer);
+		if (len > 0 && len > strlen(value))
+		{
+			loc_beg = strcasestr(buffer, value) + strlen(value);
+			if (!isspace(*loc_beg))
+				continue;
+			pclose(fp);
+			return strtol(loc_beg, NULL, 0);
+		}
+	}
+	pclose(fp);
+	
+	return 0;
+}
+
+/* Adds a modifier key value to an event structure */
+static void config_add_mod(btnx_event *e, int mod)
+{
+	int i;
+	
+	for (i=0; i<MAX_MODS; i++)
+	{
+		if (e->mod[i] == 0)
+		{
+			e->mod[i] = mod;
+			return;
+		}
+	}
+	
+	fprintf(stderr, OUT_PRE "Warning: attempting to add more mods than allowed "
+			"by MAX_MODS\n");
+}
+
+/* Split an execute command string into a string vector of its executable path
+ * and its arguments for execv() */
+static char **config_split_command(char *cmd)
+{
+	char *beg, *end, closing;
+	int stop=0, i=0, enclosed=0;
+	char **args=NULL;
+	
+	if (cmd == NULL)
+		return NULL;
+	args = (char **) malloc(sizeof(char*));
+	if (args == NULL)
+		return NULL;
+	args[0] = NULL;
+	
+	beg = cmd;
+	
+	while (1)
+	{
+		while (*beg == '\t' || (*beg == ' ' && *(beg-1) != '\\')) beg++;
+		if (*beg == '\0') break;
+		end = beg;
+		
+		while (	(*end != '\0' && *end != '\t' && *end != ' ') ||
+				(*end == ' ' && *(end-1) == '\\') ||
+				(*end == ' ' && enclosed))
+		{
+			if (IS_ENCLOSING(*end) && enclosed == 0)
+			{
+				closing = *end;
+				enclosed = 1;
+			}
+			else if (IS_ENCLOSING(*end) && enclosed == 1)
+			{
+				if (closing == *end)
+					enclosed = 0;
+			}
+			end++;
+		}
+		if (*end == '\0') stop = 1;
+		*end = '\0';
+		
+		i++;
+		args = (char **) realloc(args, (i+1) * sizeof(char*));
+		args[i-1] = beg; args[i] = NULL;
+		
+		if (stop)
+			break;
+		beg = end + 1;
+	}
+	
+	if (i < 1)
+	{
+		fprintf(stderr, OUT_PRE "Error: invalid arguments for command execution configuration option.\n");
+		fprintf(stderr, OUT_PRE "You must specify at least one item: /path/to/executable_name\n");
+		fprintf(stderr, OUT_PRE "Example: /usr/bin/gedit\n");
+		fprintf(stderr, OUT_PRE "Then append optional arguments: /usr/bin/gedit --new-window /etc/btnx/btnx_config\n");
+		
+		return NULL;
+	}
+	
+	return args;
+}
+
+/* Set event type, the command and its arguments for a command execution event */
+static char *config_set_command(btnx_event *e, char *value)
+{
+	e->command = (char *) malloc((strlen(value) + 1)*sizeof(char));
+	
+	if (e->command == NULL)
+	{
+		fprintf(stderr, OUT_PRE "Error: could not allocate command: %s\n", strerror(errno));
+		return NULL;
+	}
+	e->keycode = COMMAND_EXECUTE;
+	strcpy(e->command, value);
+	
+	e->args = config_split_command(e->command);
+	if (e->args == NULL)
+	{
+		fprintf(stderr, OUT_PRE "Fatal error in config_split_command. Exiting...\n");
+		exit(BTNX_ERROR_BAD_CONFIG);
+	}
+	
+	return e->command;
+	
+}
+
+/* Set the configuration switch type for an event. */
+static void config_set_switch_type(btnx_event *e, char *value)
+{
+	int num;
+	
+	e->keycode = CONFIG_SWITCH;
+	num = strtol(value, NULL, 10);
+	e->switch_type = num;
+}
+
+/* Set the configuration switch name for an event. */
+static void config_set_switch_name(btnx_event *e, char *value)
+{
+	if (e->switch_name != NULL)
+		free(e->switch_name);
+	e->switch_name = (char *) malloc((strlen(value)+1) * sizeof(char));
+	strcpy(e->switch_name, value);
+}
+
+/* Compares the parsed option name to defined option names. If a match is found,
+ * set the value to the correct variable in the event structure. */
+static const char *config_add_value(btnx_event *e, 
+									int type, 
+									const char *option, 
+									char *value)
+{
+#ifdef DEBUG	
+	printf(OUT_PRE "Loaded config value: %s\n",option);
+#endif
+	
+	/* Button values */
+	if (type == BLOCK_BUTTON)
+	{
+		if (!strcasecmp(option, "rawcode"))
+		{
+			e->rawcode = strtol(value, NULL, 16);
+			return option;
+		}
+		if (!strcasecmp(option, "enabled"))
+		{
+			e->enabled = strtol(value, NULL, 10);
+			return option;
+		}
+		if (!strcasecmp(option, "type"))
+		{
+			e->type = strtol(value, NULL, 10);
+			return option;
+		}
+		if (!strcasecmp(option, "delay"))
+		{
+			e->delay = strtol(value, NULL, 10);
+			return option;
+		}
+		if (!strcasecmp(option, "keycode"))
+		{
+			e->keycode = config_get_keycode(value);
+			return option;
+		}
+		if (!strcasecmp(option, "mod1"))
+		{
+			config_add_mod(e, config_get_keycode(value));
+			return option;
+		}
+		if (!strcasecmp(option, "mod2"))
+		{
+			config_add_mod(e, config_get_keycode(value));
+			return option;
+		}
+		if (!strcasecmp(option, "mod3"))
+		{
+			config_add_mod(e, config_get_keycode(value));
+			return option;
+		}
+		if (!strcasecmp(option, "command"))
+		{
+			config_set_command(e, value);
+			return option;
+		}
+		if (!strcasecmp(option, "uid"))
+		{
+			e->uid = strtol(value, NULL, 10);
+			return option;
+		}
+		if (!strcasecmp(option, "switch_type"))
+		{
+			config_set_switch_type(e, value);
+			return option;
+		}
+		if (!strcasecmp(option, "switch_name"))
+		{
+			config_set_switch_name(e, value);
+			return option;
+		}
+		if (!strcasecmp(option, "force_release"))
+		{
+			if (strtol(value, NULL, 10) == 1)
+				e->type = BUTTON_IMMEDIATE;
+			return option;
+		}
+		if (!strcasecmp(option, "name"))
+			return option;
+	}
+	/* Mouse values */
+	else if (type == BLOCK_MOUSE)
+	{
+		if (!strcasecmp(option, "vendor_name"))
+			return option;
+		if (!strcasecmp(option, "product_name"))
+			return option;
+		if (!strcasecmp(option, "vendor_id"))
+		{
+			device_set_vendor_id(strtol(value, NULL, 16));
+			return option;
+		}
+		if (!strcasecmp(option, "product_id"))
+		{
+			device_set_product_id(strtol(value, NULL, 16));
+			return option;
+		}
+		if (!strcasecmp(option, "revoco_mode"))
+		{
+			revoco_set_mode(strtol(value, NULL, 10));
+			return option;
+		}
+		if (!strcasecmp(option, "revoco_btn"))
+		{
+			revoco_set_btn(strtol(value, NULL, 10));
+			return option;
+		}
+		if (!strcasecmp(option, "revoco_up_scroll"))
+		{
+			revoco_set_up_scroll(strtol(value, NULL, 10));
+			return option;
+		}
+		if (!strcasecmp(option, "revoco_down_scroll"))
+		{
+			revoco_set_down_scroll(strtol(value, NULL, 10));
+			return option;
+		}
+	}
+	
+	return NULL;
+}
+
+
+/* Parse a configuration file and return the btnx_event structures */
 btnx_event **config_parse(char *config_name)
 {
 	FILE *fp;
@@ -172,7 +494,7 @@ btnx_event **config_parse(char *config_name)
 	char *loc_eq, *loc_com, *loc_beg, *loc_end;
 	int block_begin = 0, block_end = 1;
 	btnx_event **bevs;
-	int i=-1, block_type=BLOCK_NONE; //ret,
+	int i=-1, block_type=BLOCK_NONE;
 	
 	if ((config_name = config_get_names(config_name)) == NULL)
 		sprintf(buffer,"%s/%s", CONFIG_PATH, CONFIG_NAME);
@@ -299,281 +621,3 @@ btnx_event **config_parse(char *config_name)
 	
 	return bevs;
 }
-
-char *config_add_value(btnx_event *e, int type, char *option, char *value)
-{
-#ifdef DEBUG	
-	printf(OUT_PRE "Loaded config value: %s\n",option);
-#endif
-	
-	if (type == BLOCK_BUTTON)
-	{
-		if (!strcasecmp(option, "rawcode"))
-		{
-			e->rawcode = strtol(value, NULL, 16);
-			return option;
-		}
-		if (!strcasecmp(option, "enabled"))
-		{
-			e->enabled = strtol(value, NULL, 10);
-			return option;
-		}
-		if (!strcasecmp(option, "type"))
-		{
-			e->type = strtol(value, NULL, 10);
-			return option;
-		}
-		if (!strcasecmp(option, "delay"))
-		{
-			e->delay = strtol(value, NULL, 10);
-			return option;
-		}
-		if (!strcasecmp(option, "keycode"))
-		{
-			e->keycode = config_get_keycode(value);
-			return option;
-		}
-		if (!strcasecmp(option, "mod1"))
-		{
-			config_add_mod(e, config_get_keycode(value));
-			return option;
-		}
-		if (!strcasecmp(option, "mod2"))
-		{
-			config_add_mod(e, config_get_keycode(value));
-			return option;
-		}
-		if (!strcasecmp(option, "mod3"))
-		{
-			config_add_mod(e, config_get_keycode(value));
-			return option;
-		}
-		if (!strcasecmp(option, "command"))
-		{
-			config_set_command(e, value);
-			return option;
-		}
-		if (!strcasecmp(option, "uid"))
-		{
-			e->uid = strtol(value, NULL, 10);
-			return option;
-		}
-		if (!strcasecmp(option, "switch_type"))
-		{
-			config_set_switch_type(e, value);
-			return option;
-		}
-		if (!strcasecmp(option, "switch_name"))
-		{
-			config_set_switch_name(e, value);
-			return option;
-		}
-		if (!strcasecmp(option, "force_release"))
-		{
-			if (strtol(value, NULL, 10) == 1)
-				e->type = BUTTON_IMMEDIATE;
-			return option;
-		}
-		if (!strcasecmp(option, "name"))
-			return option;
-	}
-	else if (type == BLOCK_MOUSE)
-	{
-		if (!strcasecmp(option, "vendor_name"))
-			return option;
-		if (!strcasecmp(option, "product_name"))
-			return option;
-		if (!strcasecmp(option, "vendor_id"))
-		{
-			device_set_vendor_id(strtol(value, NULL, 16));
-			return option;
-		}
-		if (!strcasecmp(option, "product_id"))
-		{
-			device_set_product_id(strtol(value, NULL, 16));
-			return option;
-		}
-		if (!strcasecmp(option, "revoco_mode"))
-		{
-			revoco_set_mode(strtol(value, NULL, 10));
-			return option;
-		}
-		if (!strcasecmp(option, "revoco_btn"))
-		{
-			revoco_set_btn(strtol(value, NULL, 10));
-			return option;
-		}
-		if (!strcasecmp(option, "revoco_up_scroll"))
-		{
-			revoco_set_up_scroll(strtol(value, NULL, 10));
-			return option;
-		}
-		if (!strcasecmp(option, "revoco_down_scroll"))
-		{
-			revoco_set_down_scroll(strtol(value, NULL, 10));
-			return option;
-		}
-	}
-	
-	return NULL;
-}
-
-void config_add_mod(btnx_event *e, int mod)
-{
-	int i;
-	
-	for (i=0; i<MAX_MODS; i++)
-	{
-		if (e->mod[i] == 0)
-		{
-			e->mod[i] = mod;
-			return;
-		}
-	}
-	
-	fprintf(stderr, OUT_PRE "Warning: attempting to add more mods than allowed by MAX_MODS\n");
-}
-
-int config_get_keycode(const char *value)
-{
-	FILE *fp;
-	char buffer[128];
-	char *loc_beg;
-	int len;
-	
-	if (strlen(value) > 20)
-	{
-		fprintf(stderr, OUT_PRE "Warning: possibly malformed keycode or modifier value. Ignoring.\n");
-		return 0;
-	}
-	
-	if (!strcasecmp(value, "none"))
-		return 0;
-	
-	if (!strcasecmp(value, "REL_WHEELFORWARD"))
-		return REL_WHEELFORWARD;
-	else if (!strcasecmp(value, "REL_WHEELBACK"))
-		return REL_WHEELBACK;
-	
-	sprintf(buffer, "cat %s/%s | /bin/grep %s", CONFIG_PATH, EVENTS_NAME, value);
-	fp = popen(buffer, "r");
-	while (fgets(buffer, 127, fp) != NULL)
-	{
-		len = strlen(buffer);
-		if (len > 0 && len > strlen(value))
-		{
-			loc_beg = strcasestr(buffer, value) + strlen(value);
-			if (!isspace(*loc_beg))
-				continue;
-			pclose(fp);
-			return strtol(loc_beg, NULL, 0);
-		}
-	}
-	pclose(fp);
-	
-	return 0;
-}
-
-char **config_split_command(char *cmd)
-{
-	char *beg, *end, closing;
-	int stop=0, i=0, enclosed=0;
-	char **args=NULL;
-	
-	if (cmd == NULL)
-		return NULL;
-	args = (char **) malloc(sizeof(char*));
-	if (args == NULL)
-		return NULL;
-	args[0] = NULL;
-	
-	beg = cmd;
-	
-	while (1)
-	{
-		while (*beg == '\t' || (*beg == ' ' && *(beg-1) != '\\')) beg++;
-		if (*beg == '\0') break;
-		end = beg;
-		
-		while (	(*end != '\0' && *end != '\t' && *end != ' ') ||
-				(*end == ' ' && *(end-1) == '\\') ||
-				(*end == ' ' && enclosed))
-		{
-			if (IS_ENCLOSING(*end) && enclosed == 0)
-			{
-				closing = *end;
-				enclosed = 1;
-			}
-			else if (IS_ENCLOSING(*end) && enclosed == 1)
-			{
-				if (closing == *end)
-					enclosed = 0;
-			}
-			end++;
-		}
-		if (*end == '\0') stop = 1;
-		*end = '\0';
-		
-		i++;
-		args = (char **) realloc(args, (i+1) * sizeof(char*));
-		args[i-1] = beg; args[i] = NULL;
-		
-		if (stop)
-			break;
-		beg = end + 1;
-	}
-	
-	if (i < 1)
-	{
-		fprintf(stderr, OUT_PRE "Error: invalid arguments for command execution configuration option.\n");
-		fprintf(stderr, OUT_PRE "You must specify at least one item: /path/to/executable_name\n");
-		fprintf(stderr, OUT_PRE "Example: /usr/bin/gedit\n");
-		fprintf(stderr, OUT_PRE "Then append optional arguments: /usr/bin/gedit --new-window /etc/btnx/btnx_config\n");
-		
-		return NULL;
-	}
-	
-	return args;
-}
-
-char *config_set_command(btnx_event *e, char *value)
-{
-	e->command = (char *) malloc((strlen(value) + 1)*sizeof(char));
-	
-	if (e->command == NULL)
-	{
-		fprintf(stderr, OUT_PRE "Error: could not allocate command: %s\n", strerror(errno));
-		return NULL;
-	}
-	e->keycode = COMMAND_EXECUTE;
-	strcpy(e->command, value);
-	
-	e->args = config_split_command(e->command);
-	if (e->args == NULL)
-	{
-		fprintf(stderr, OUT_PRE "Fatal error in config_split_command. Exiting...\n");
-		exit(BTNX_ERROR_BAD_CONFIG);
-	}
-	
-	return e->command;
-	
-}
-
-void config_set_switch_type(btnx_event *e, char *value)
-{
-	int num;
-	
-	e->keycode = CONFIG_SWITCH;
-	num = strtol(value, NULL, 10);
-	e->switch_type = num;
-}
-
-void config_set_switch_name(btnx_event *e, char *value)
-{
-	if (e->switch_name != NULL)
-		free(e->switch_name);
-	e->switch_name = (char *) malloc((strlen(value)+1) * sizeof(char));
-	strcpy(e->switch_name, value);
-}
-
-

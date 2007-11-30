@@ -7,13 +7,7 @@
 #ifndef CONFIG_PARSER_H_
 #define CONFIG_PARSER_H_
 
-#include "btnx.h"
-
-#ifdef DEBUG
-#define CONFIG_NAME				"btnx_config_debug"
-#else
 #define CONFIG_NAME				"btnx_config"
-#endif
 #define CONFIG_PATH				"/etc/btnx"
 #define EVENTS_NAME				"events"
 #define DEFAULTS_CONFIG_PATH	"/etc/btnx/defaults"
@@ -28,21 +22,11 @@
 #define IS_ENCLOSING(c) ((c) == '\'' || (c) == '"' || (c) == '`')
 
 
-char *config_get_next(void);
-char *config_get_prev(void);
+/* Return configuration file names */
+const char *config_get_next(void);
+const char *config_get_prev(void);
 
-/* Parses the configuration file */
+/* Parse the configuration file */
 btnx_event **config_parse(char *config_name);
-
-char *config_add_value(btnx_event *e, int type, char *option, char *value);
-
-int config_get_keycode(const char *value);
-
-void config_add_mod(btnx_event *e, int mod);
-
-char *config_set_command(btnx_event *e, char *value);
-
-void config_set_switch_type(btnx_event *e, char *value);
-void config_set_switch_name(btnx_event *e, char *value);
 
 #endif /*CONFIG_PARSER_H_*/

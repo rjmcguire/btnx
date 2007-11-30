@@ -53,7 +53,7 @@
 #include "revoco.h"
 #include "btnx.h"
 
-#define streq(a,b)	(strcmp((a), (b)) == 0)
+#define streq(a,b)		(strcmp((a), (b)) == 0)
 #define strneq(a,b,c)	(strncmp((a), (b), (c)) == 0)
 
 #define LOGITECH	0x046d
@@ -110,13 +110,24 @@ struct hiddev_usage_ref_multi {
 
 /*** end hiddev.h ***/
 
+/* Static variables */
 static int revoco_mode=0;
 static int revoco_btn=3;
 static int revoco_up_scroll=0;
 static int revoco_down_scroll=0;
 
-static void
-fatal(const char *fmt, ...)
+/* Static function declarations */
+static void fatal(const char *fmt, ...);
+static int open_dev(char *path);
+static void close_dev(int fd);
+static void send_report(int fd, int id, int *buf, int n);
+static void mx_cmd(int fd, int b1, int b2, int b3);
+static void configure(int handle);
+static void trouble_shooting(void);
+static int revoco_check_values(void);
+
+
+static void fatal(const char *fmt, ...)
 {
     va_list args;
 
@@ -127,8 +138,7 @@ fatal(const char *fmt, ...)
     va_end(args);
 }
 
-static int
-open_dev(char *path)
+static int open_dev(char *path)
 {
     char buf[128];
     int i, fd;
@@ -154,14 +164,12 @@ open_dev(char *path)
     return -1;
 }
 
-static void
-close_dev(int fd)
+static void close_dev(int fd)
 {
     close(fd);
 }
 
-static void
-send_report(int fd, int id, int *buf, int n)
+static void send_report(int fd, int id, int *buf, int n)
 {
     struct hiddev_usage_ref_multi uref;
     struct hiddev_report_info rinfo;
@@ -190,16 +198,14 @@ send_report(int fd, int id, int *buf, int n)
 	}
 }
 
-static void
-mx_cmd(int fd, int b1, int b2, int b3)
+static void mx_cmd(int fd, int b1, int b2, int b3)
 {
     int buf[6] = { 0x01, 0x80, 0x56, b1, b2, b3 };
 
     send_report(fd, 0x10, buf, 6);
 }
 
-static void
-configure(int handle)
+static void configure(int handle)
 {
 	int perm = 0x00;
 	
@@ -223,8 +229,7 @@ configure(int handle)
     }
 }
 
-static void
-trouble_shooting(void)
+static void trouble_shooting(void)
 {
     char *path;
     int fd;

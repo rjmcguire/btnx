@@ -21,6 +21,7 @@
 #define BTNX_PRODUCT_MOUSE	0x0001
 #define BTNX_PRODUCT_KBD	0x0002
 
+/* Static variables */
 static int uinput_mouse_fd = -1;
 static int uinput_kbd_fd = -1;
 
@@ -28,18 +29,20 @@ static int uinput_kbd_fd = -1;
  * uinput_init() function partially derived from Micah Dowty's uinput_mouse.c
  * <http://svn.navi.cx/misc/trunk/vision/lib/uinput_mouse.c>
  */
+/* Open and init uinput file descriptors */
 int uinput_init(const char *dev_name) 
 {
   struct uinput_user_dev dev_mouse, dev_kbd;
   int i;
 
-  uinput_mouse_fd = open_handler("uinput", O_WRONLY | O_NDELAY);	//open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
+  uinput_mouse_fd = open_handler("uinput", O_WRONLY | O_NDELAY);
   if (uinput_mouse_fd < 0) 
   {
-    perror(OUT_PRE "Error opening the uinput device.\nMake sure you have loaded the uinput module (modprobe uinput)");
+    perror(	OUT_PRE "Error opening the uinput device.\n"
+    		OUT_PRE "Make sure you have loaded the uinput module (modprobe uinput)");
     exit(BTNX_ERROR_OPEN_UINPUT);
   }
-  uinput_kbd_fd = open_handler("uinput", O_WRONLY | O_NDELAY);	//open(UINPUT_LOCATION, O_WRONLY | O_NDELAY);
+  uinput_kbd_fd = open_handler("uinput", O_WRONLY | O_NDELAY);
   if (uinput_kbd_fd < 0) 
   {
     perror(OUT_PRE "Error opening the uinput device");
@@ -90,6 +93,7 @@ int uinput_init(const char *dev_name)
   return 0;
 }
 
+/* Send a key combo event, either press or release */
 void uinput_key_press(struct btnx_event *bev)
 {
 	struct input_event event;

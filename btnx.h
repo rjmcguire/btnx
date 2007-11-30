@@ -13,8 +13,11 @@
 #define MAX_RAWCODES	10
 #define HEXDUMP_SIZE	8
 
+/* A string prepended to output from this program. Makes messages and errors
+ * clearer. */
 #define OUT_PRE			" btnx: "
 
+/* Exit errors */
 enum
 {
 	BTNX_EXIT_NORMAL=0,
@@ -26,6 +29,7 @@ enum
 	BTNX_ERROR_OPEN_UINPUT,
 };
 
+/* btnx specific events, not specified by the input interface */
 enum
 {
 	BTNX_EXTRA_EVENTS=0xFFF0,
@@ -35,6 +39,7 @@ enum
 	CONFIG_SWITCH
 };
 
+/* Configuration switch types */
 enum
 {
 	CONFIG_SWITCH_NONE,
@@ -43,33 +48,36 @@ enum
 	CONFIG_SWITCH_TO
 };
 
+/* Button types */
 enum
 {
-	BUTTON_NORMAL=0,
-	BUTTON_IMMEDIATE
+	BUTTON_NORMAL=0,	/* Send pressed and release signals separately when received */
+	BUTTON_IMMEDIATE	/* Send both pressed and released signals immediately */
 };
 
+/* Contains all necessary information to handle a button event */
 typedef struct btnx_event
 {
-	int rawcode;
-	int type;
-	int delay;
-	struct timeval last;
-	int keycode;
-	int mod[MAX_MODS];
-	int pressed;
-	int enabled;
-	char *command;
-	char **args;
-	int uid;
-	int switch_type;
-	char *switch_name;
+	int		rawcode;		/* 32-bit button rawcode, sniffed from event handler */
+	int 	type;			/* Button type */
+	int 	delay;			/* Minimum time before event can be resent */
+	struct timeval last;	/* Last time this event occurred */
+	int 	keycode;		/* Keyboard or mouse button keycode */
+	int 	mod[MAX_MODS];	/* Modifier key for the keycode */
+	int 	pressed;		/* 0: release event, 1: press event */
+	int		enabled;		/* Only send event if enabled */
+	char	*command;		/* The absolute path of the executable to execute */
+	char	**args;			/* Arguments for the executable */
+	int		uid;			/* UID to run the command as */
+	int		switch_type;	/* Configuration switch type */
+	char	*switch_name;	/* Name of confiugration to switch to */
 } btnx_event;
 
+/* Most important data from hexdumping an event handler */
 typedef struct hexdump
 {
-	int rawcode;
-	int pressed;
+	int rawcode;	/* 32-bit button rawcode */
+	int pressed;	/* Specifies whether button was pressed or released */
 } hexdump;
 
 int open_handler(char *name, int flags);

@@ -28,7 +28,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.4.0"
+#define PROGRAM_VERSION	"0.4.1"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -48,20 +48,16 @@
 #include "uinput.h"
 #include "btnx.h"
 #include "config_parser.h"
-#include "devices_parser.h"
 #include "device.h"
 #include "revoco.h"
 
-#define INPUT_BUFFER_SIZE	512
-#define NUM_EVENT_HANDLERS	20
 #define CHAR2INT(c, x) (((int)(c)) << ((x) * 8))
-
+#define INPUT_BUFFER_SIZE		512
+#define NUM_EVENT_HANDLERS		20
 #define NUM_HANDLER_LOCATIONS	3
-
-#define TYPE_MOUSE		0
-#define TYPE_KBD		1
-
-#define PID_FILE		"/var/run/btnx.pid"
+#define TYPE_MOUSE				0
+#define TYPE_KBD				1
+#define PID_FILE				"/var/run/btnx.pid"
 
 /*
  * The following macros are from mouseemu, to help distinguish
@@ -76,8 +72,9 @@
 #define test_bit(bit, array) ((array[LONG(bit)] >> OFF(bit)) & 1)
 /* End mouseemu macros */
 
-static char *g_exec_path=NULL;
-struct timeval exec_time; // time when daemon was executed.
+/* Static variables */
+static char *g_exec_path=NULL; 		/* Path of this executable */
+static struct timeval exec_time; 	/* time when daemon was executed. */
 
 /* Possible paths of event handlers */
 const char handler_locations[][15] =
@@ -87,9 +84,23 @@ const char handler_locations[][15] =
 	{"/dev/misc"}
 };
 
+/* Static function declarations */
+static const char *get_handler_location(int index);
+static int find_handler(int flags, int vendor, int product, int type);
+static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed);
+static hexdump *btnx_event_read(int fd);
+static void command_execute(btnx_event *bev);
+static void config_switch(btnx_event *bev);
+static void send_extra_event(btnx_event **bevs, int index);
+static int check_delay(btnx_event *bev);
+static void kill_pids(int fd);
+static void append_pid(int kill_old);
+static void main_args(int argc, char *argv[], int *bg, int *log, char **config_file);
+
+
 /* To simplify the open_handler loop. Can't think of another reason why I
  * coded this */
-const char *get_handler_location(int index)
+static const char *get_handler_location(int index)
 {
 	if (index < 0 || index > NUM_HANDLER_LOCATIONS - 1)
 		return NULL;
@@ -121,7 +132,7 @@ int open_handler(char *name, int flags)
 /* Tries to find an input handler that has a certain vendor and product
  * ID associated with it. type determines whether it is a mouse or keyboard
  * input handler that is being searched. */
-int find_handler(int flags, int vendor, int product, int type)
+static int find_handler(int flags, int vendor, int product, int type)
 {
 	int i, fd;
 	unsigned short id[6];
@@ -151,7 +162,7 @@ int find_handler(int flags, int vendor, int product, int type)
 
 /* Find the btnx_event structure that is associated with a captured rawcode
  * and return its index. */
-int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
+static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 {
 	int i=0;
 	
@@ -171,7 +182,7 @@ int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 }
 
 /* Extract the rawcode(s) of an input event. */
-hexdump *btnx_event_read(int fd)
+static hexdump *btnx_event_read(int fd)
 {
 	static hexdump codes[MAX_RAWCODES];
 	int ret, i, j=0;
@@ -202,7 +213,7 @@ hexdump *btnx_event_read(int fd)
 }
 
 /* Execute a shell script or binary file */
-void command_execute(btnx_event *bev)
+static void command_execute(btnx_event *bev)
 {
 	int pid;
 	
@@ -219,14 +230,15 @@ void command_execute(btnx_event *bev)
 	return;
 }
 
-void config_switch(btnx_event *bev)
+/* Perform a configuration switch */
+static void config_switch(btnx_event *bev)
 {
-	char *name;
+	const char *name;
 	struct timeval now;
 	
-	/* block in case last config switch button is the same as a current one
-	 * this helps prevent a situation where configurations switch multiple
-	 * times */
+	/* Block in case last config switch button is the same as a current one.
+	 * This helps prevent a situation where configurations switch multiple
+	 * times if the button is held down while the switch occurs. */
 	gettimeofday(&now, NULL);
 	if (((int)(((unsigned int)now.tv_sec - (unsigned int)exec_time.tv_sec) * 1000) +
 		(int)(((int)now.tv_usec - (int)exec_time.tv_usec) / 1000))
@@ -260,7 +272,7 @@ void config_switch(btnx_event *bev)
 
 /* Special events, like wheel scrolls and command executions need to be
  * handled differently. They use this function. */
-void send_extra_event(btnx_event **bevs, int index)
+static void send_extra_event(btnx_event **bevs, int index)
 {
 	int tmp_kc = bevs[index]->keycode;
 	
@@ -297,7 +309,8 @@ static int check_delay(btnx_event *bev)
 	
 	if (bev->last.tv_sec == 0 && bev->last.tv_usec == 0)
 		return 0;
-		
+	
+	/* Perform a millisecond conversion and compare */
 	if (((int)(((unsigned int)now.tv_sec - (unsigned int)bev->last.tv_sec) * 1000) +
 		(int)(((int)now.tv_usec - (int)bev->last.tv_usec) / 1000))
 		> (int)bev->delay)
@@ -305,6 +318,7 @@ static int check_delay(btnx_event *bev)
 	return -1;
 }
 
+/* Kill any previous btnx processes found in the PID file */
 static void kill_pids(int fd)
 {
 	char tmp[16];
@@ -332,13 +346,13 @@ static void kill_pids(int fd)
 			if (len == 0)
 				break;
 		}
-		//printf(OUT_PRE "len: %d\n", len);
 		if (x==0 && (tmp[x] == '\0' || tmp[x] == EOF))
 			break;
 		if (!isdigit(tmp[x]))
 		{
 			tmp[x+1] = '\0';
 			pid = (pid_t)strtol(tmp, NULL, 10);
+			/* Don't kill self or any process groups */
 			if (pid >= 1 && pid != getpid())
 			{
 				if (kill(pid, SIGKILL) < 0)
@@ -363,6 +377,7 @@ static void kill_pids(int fd)
 	close(fd);
 }
 
+/* Append own PID to PID file, optionally kill previous processes */
 static void append_pid(int kill_old)
 {
 	int fd, flags;
@@ -398,6 +413,7 @@ static void append_pid(int kill_old)
 		fprintf(stderr, OUT_PRE "Warning: write error to pid file %s: %s\n",
 				PID_FILE, strerror(errno));
 	}
+	/* Release the PID file lock */
 	flock(fd, LOCK_UN);
 	close(fd);
 }
@@ -412,8 +428,10 @@ static void main_args(int argc, char *argv[], int *bg, int *log, char **config_f
 		int x;
 		for (x=1; x<argc; x++)
 		{
+			/* Background daemon */
 			if (!strncmp(argv[x], "-b", 2))
 				*bg=1;
+			/* Print version information */
 			else if (!strncmp(argv[x], "-v", 2))
 			{
 				printf(	PROGRAM_NAME " v." PROGRAM_VERSION "\n"
@@ -421,6 +439,7 @@ static void main_args(int argc, char *argv[], int *bg, int *log, char **config_f
 						"Compatible with btnx-config >= v.0.4.0\n");
 				exit(BTNX_EXIT_NORMAL);	
 			}
+			/* Start with specific configuration */
 			else if (!strncmp(argv[x], "-c", 2))
 			{
 				if (x < argc - 1)
@@ -441,6 +460,7 @@ static void main_args(int argc, char *argv[], int *bg, int *log, char **config_f
 					goto usage;
 				}
 			}
+			/* Output stderr to log file */
 			else if (!strncmp(argv[x], "-l", 2))
 				*log = 1;
 			else
@@ -489,7 +509,7 @@ int main(int argc, char *argv[])
 				" no problem.\n");
 	}
 	else
-		printf(OUT_PRE "uinput modprobed successfully.\n");
+		fprintf(stderr, OUT_PRE "uinput modprobed successfully.\n");
 	
 	bevs = config_parse(config_name);
 	

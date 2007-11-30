@@ -7,10 +7,10 @@
   * 
   */
   
-
 #ifndef REVOCO_H_
 #define REVOCO_H_
 
+/* Possible revoco modes */
 enum
 {
 	REVOCO_DISABLED=0,
@@ -21,10 +21,13 @@ enum
 	REVOCO_INVALID_MODE
 };
 
-int revoco_launch(void);
+/* Config parser uses these to set up revoco */
 void revoco_set_mode(int mode);
 void revoco_set_btn(int btn);
 void revoco_set_up_scroll(int value);
 void revoco_set_down_scroll(int value);
+
+/* Execute revoco functionality */
+int revoco_launch(void);
 
 #endif /*REVOCO_H_*/
