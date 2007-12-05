@@ -1,5 +1,14 @@
 btnx ChangeLog
 
+2007-12-05	v.0.4.1
+	* Init script fix: do_start() attempts to start btnx with full path and
+	on failure, attempts to start it with just the executable name. Necessary
+	for different implementations of start_daemon().
+	* Init script fix: log_*_msg removed, replaced with echoes
+	* Init script fix: checks for existence of event handlers before allowing
+	btnx to be started.
+	* These should fix the delay during boot that some users have experienced.
+
 2007-11-29	v.0.4.0
 	* Compatible with btnx-config 0.4.0
 	* Added support for multiple configurations.

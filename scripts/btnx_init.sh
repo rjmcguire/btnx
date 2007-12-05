@@ -36,8 +36,9 @@ ARG_CONFIG=
 
 # If LSB init-functions use start-stop-daemon, use full path for launching
 # daemon through start_daemon. Otherwise, just give the name of the executable.
-cat /lib/lsb/init-functions | grep start-stop-daemon > /dev/null
-[ $? -eq 1 ] && DAEMON=$NAME
+# Edited out: do_start() attempts both
+# cat /lib/lsb/init-functions | grep start-stop-daemon > /dev/null
+# [ $? -eq 1 ] && DAEMON=$NAME
 
 # Define LSB log_* functions.
 # Depend on lsb-base (>= 3.0-6) to ensure that this file is present.
@@ -50,6 +51,24 @@ else
 fi
 
 #
+# Function that checks event handlers. Prevents
+# udev loading hang.
+#
+check_handlers()
+{
+	ls /dev/event* > /dev/null 2> /dev/null
+	[ $? = 0 ] && return 0
+	ls /dev/input/event* > /dev/null 2> /dev/null
+	[ $? = 0 ] && return 0
+	ls /dev/misc/event* > /dev/null 2> /dev/null
+	[ $? = 0 ] && return 0
+
+	echo "No input event handlers found. Start blocked."
+
+	return 1
+}
+
+#
 # Function that starts the daemon/service
 #
 do_start()
@@ -59,8 +78,14 @@ do_start()
 	#   1 if daemon was already running
 	#   2 if daemon could not be started
 	
-	start_daemon $DAEMON -b $ARG_CONFIG #|| return 2
-	return $?
+	start_daemon $DAEMON -b $ARG_CONFIG
+	RET=$?
+	if [ $RET -eq 2 ]; then
+		log_failure_msg "start_daemon failed to start btnx with full path. Trying without"
+		start_daemon $NAME -b $ARG_CONFIG
+		RET=$?
+	fi
+	return $RET
 }
 
 #
@@ -106,20 +131,20 @@ do_reload() {
 case "$1" in
   start)
 	echo "Starting $NAME :" "$DESC" >&2
-	#if [ -e $PIDFILE ]; then
-	#	log_success_msg "btnx already running"
-	#	exit 0	
-	#fi
+	check_handlers
+	[ $? -ne 0 ] && exit 1
 	do_stop
 	do_start
 	RET=$?
 	case "$RET" in
 		0) 
-			log_success_msg "btnx successfully started" 
+			echo "btnx successfully started" 
+			#log_success_msg "btnx successfully started" 
 			exit 0
 			;;
 		*) 
-			log_failure_msg "btnx failed to start" 
+			echo "btnx failed to start (error code $RET)"
+			#log_failure_msg "btnx failed to start (error code $RET)" 
 			exit $RET
 			;;
 	esac
@@ -129,11 +154,13 @@ case "$1" in
 	do_stop
 	case "$?" in
 		0|1) 
-			log_success_msg "btnx successfully stopped" 
+			echo "btnx successfully stopped" 
+			#log_success_msg "btnx successfully stopped" 
 			exit 0
 			;;
 		2) 
-			log_failure_msg "btnx failed to stop" 
+			echo "btnx failed to stop" 
+			#log_failure_msg "btnx failed to stop" 
 			exit $FAIL_STATUS
 			;;
 	esac
@@ -156,21 +183,25 @@ case "$1" in
 	do_stop
 	case "$?" in
 	  0|1)
-	  	log_success_msg "btnx successfully stopped"
+		echo "btnx successfully stopped"
+	  	#log_success_msg "btnx successfully stopped"
 		do_start
 		RET=$?
 		case "$RET" in
 			0) 
-				log_success_msg "btnx successfully started" 
+				echo "btnx successfully started"
+				#log_success_msg "btnx successfully started" 
 				exit 0 ;;
 			*) 
-				log_failure_msg "btnx failed to start during restart" 
+				echo "btnx failed to start during restart" 
+				#log_failure_msg "btnx failed to start during restart" 
 				exit $RET ;;
 		esac
 		;;
 	  *)
 	  	# Failed to stop
-		log_failure_msg "btnx failed to stop during restart"
+		echo "btnx failed to stop during restart"
+		#log_failure_msg "btnx failed to stop during restart"
 		exit $FAIL_STATUS ;;
 	esac
 	;;
