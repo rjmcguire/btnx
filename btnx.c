@@ -28,7 +28,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.4.1"
+#define PROGRAM_VERSION	"0.4.2"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -357,12 +357,15 @@ static void kill_pids(int fd)
 			{
 				if (kill(pid, SIGKILL) < 0)
 				{
-					fprintf(stderr, OUT_PRE "Warning: could not kill previous btnx process: %d\n: %s",
+					fprintf(stderr, OUT_PRE "Warning: could not kill previous btnx process: %d: %s\n",
 							pid, strerror(errno));
 				}
 			}
 			else
-				fprintf(stderr, OUT_PRE "previous btnx process killed.\n");
+			{
+				fprintf(stderr, OUT_PRE "previous btnx process not killed: %d %d\n",
+						getpid(), pid);
+			}
 			if (tmp[x] == '\0' || tmp[x] == EOF)
 				break;
 			memset(tmp, '\0', 15);
@@ -374,7 +377,8 @@ static void kill_pids(int fd)
 	if (x >= 15)
 		fprintf(stderr, OUT_PRE "Warning: kill_pids pid overflow.\n");
 	ftruncate(fd, 0);
-	close(fd);
+	//fsync(fd);
+	//close(fd);
 }
 
 /* Append own PID to PID file, optionally kill previous processes */
@@ -393,7 +397,8 @@ static void append_pid(int kill_old)
 	{
 		fprintf(stderr, OUT_PRE "Warning: failed to create pid file %s: %s\n", 
 				PID_FILE, strerror(errno));
-		return;	
+		exit(BTNX_ERROR_FATAL);
+		//return;	
 	}
 	/* Lock the file for this process, or wait for lock release */
 	if (flock(fd, LOCK_EX))
@@ -412,7 +417,11 @@ static void append_pid(int kill_old)
 	{
 		fprintf(stderr, OUT_PRE "Warning: write error to pid file %s: %s\n",
 				PID_FILE, strerror(errno));
+		flock(fd, LOCK_UN);
+		close(fd);
+		exit(BTNX_ERROR_FATAL);
 	}
+	fsync(fd);
 	/* Release the PID file lock */
 	flock(fd, LOCK_UN);
 	close(fd);

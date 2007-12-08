@@ -1,5 +1,10 @@
 btnx ChangeLog
 
+2007-12-08	v.0.4.2
+	* Fixed PID file bug. kill_pids() closed file descriptor that append_pid()
+	required to append the PID of current process. Resulted in duplicate btnx
+	processes.
+
 2007-12-05	v.0.4.1
 	* Init script fix: do_start() attempts to start btnx with full path and
 	on failure, attempts to start it with just the executable name. Necessary
