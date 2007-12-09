@@ -94,8 +94,8 @@ static void config_switch(btnx_event *bev);
 static void send_extra_event(btnx_event **bevs, int index);
 static int check_delay(btnx_event *bev);
 static void kill_pids(int fd);
-static void append_pid(int kill_old);
-static void main_args(int argc, char *argv[], int *bg, int *log, char **config_file);
+static void pid_file(int kill_old, int append);
+static void main_args(int argc, char *argv[], int *bg, int *log, int *kill_all, char **config_file);
 
 
 /* To simplify the open_handler loop. Can't think of another reason why I
@@ -357,13 +357,13 @@ static void kill_pids(int fd)
 			{
 				if (kill(pid, SIGKILL) < 0)
 				{
-					fprintf(stderr, OUT_PRE "Warning: could not kill previous btnx process: %d: %s\n",
+					fprintf(stderr, OUT_PRE "old btnx process was not killed: %d: %s\n",
 							pid, strerror(errno));
 				}
 			}
 			else
 			{
-				fprintf(stderr, OUT_PRE "previous btnx process not killed: %d %d\n",
+				fprintf(stderr, OUT_PRE "old btnx process was not killed: %d %d\n",
 						getpid(), pid);
 			}
 			if (tmp[x] == '\0' || tmp[x] == EOF)
@@ -382,7 +382,7 @@ static void kill_pids(int fd)
 }
 
 /* Append own PID to PID file, optionally kill previous processes */
-static void append_pid(int kill_old)
+static void pid_file(int kill_old, int append)
 {
 	int fd, flags;
 	char tmp[16];
@@ -412,14 +412,17 @@ static void append_pid(int kill_old)
 		kill_pids(fd);
 	
 	/* Append pid */
-	sprintf(tmp, "%d ", getpid());
-	if ((write(fd, tmp, strlen(tmp))) < strlen(tmp))
+	if (append)
 	{
-		fprintf(stderr, OUT_PRE "Warning: write error to pid file %s: %s\n",
-				PID_FILE, strerror(errno));
-		flock(fd, LOCK_UN);
-		close(fd);
-		exit(BTNX_ERROR_FATAL);
+		sprintf(tmp, "%d ", getpid());
+		if ((write(fd, tmp, strlen(tmp))) < strlen(tmp))
+		{
+			fprintf(stderr, OUT_PRE "Warning: write error to pid file %s: %s\n",
+					PID_FILE, strerror(errno));
+			flock(fd, LOCK_UN);
+			close(fd);
+			exit(BTNX_ERROR_FATAL);
+		}
 	}
 	fsync(fd);
 	/* Release the PID file lock */
@@ -428,7 +431,7 @@ static void append_pid(int kill_old)
 }
 
 /* Parses command line arguments. */
-static void main_args(int argc, char *argv[], int *bg, int *log, char **config_file)
+static void main_args(int argc, char *argv[], int *bg, int *log, int *kill_all, char **config_file)
 {
 	g_exec_path = argv[0];
 	
@@ -472,6 +475,8 @@ static void main_args(int argc, char *argv[], int *bg, int *log, char **config_f
 			/* Output stderr to log file */
 			else if (!strncmp(argv[x], "-l", 2))
 				*log = 1;
+			else if (!strncmp(argv[x], "-k", 2))
+				*kill_all = 1;
 			else
 			{
 				usage:
@@ -499,10 +504,17 @@ int main(int argc, char *argv[])
 	int suppress_release=1;
 	int bg=0, log=0;
 	char *config_name=NULL;
+	int kill_all=0;
 	
-	main_args(argc, argv, &bg, &log, &config_name);
+	main_args(argc, argv, &bg, &log, &kill_all, &config_name);
 	
-	append_pid(1);
+	if (kill_all)
+	{
+		pid_file(1, 0);
+		exit(0);
+	}
+	else
+		pid_file(1, 1);
 	
 	if (log)
 	{
@@ -560,7 +572,7 @@ int main(int argc, char *argv[])
 	}
 		
 	if (bg) daemon(0,0);
-	append_pid(0);
+	pid_file(0, 1);
 	
 	gettimeofday(&exec_time, NULL);
 	

@@ -98,22 +98,24 @@ do_stop()
 	#   1 if daemon was already stopped
 	#   2 if daemon could not be stopped
 	#   other if a failure occurred
-	I=100
-	while [ -e $PIDFILE ]
-	do
-		killproc -p $PIDFILE $DAEMON SIGKILL
-		RETVAL="$?"
-		sed -i 's/[0-9]* //' $PIDFILE
-		[ -s $PIDFILE ] || rm -f $PIDFILE
-		[ $RETVAL = 2 ] && return 2
-		I=`expr $I - 1`
-		[ $I -lt 1 ] && return 2
-	done
+	#I=100
+	#while [ -e $PIDFILE ]
+	#do
+	#	killproc -p $PIDFILE $DAEMON SIGKILL
+	#	RETVAL="$?"
+	#	sed -i 's/[0-9]* //' $PIDFILE
+	#	[ -s $PIDFILE ] || rm -f $PIDFILE
+	#	[ $RETVAL = 2 ] && return 2
+	#	I=`expr $I - 1`
+	#	[ $I -lt 1 ] && return 2
+	#done
+
+	start_daemon $DAEMON -k
 
 	# Many daemons don't delete their pidfiles when they exit.
-	rm -f $PIDFILE
+	# rm -f $PIDFILE
 
-	return 0
+	return $?
 }
 
 #
