@@ -111,11 +111,18 @@ do_stop()
 	#done
 
 	start_daemon $DAEMON -k
+	RET=$?
+	if [ $RET -eq 2 ]; then
+		log_failure_msg "start_daemon failed to stop btnx with full path. Trying without"
+		start_daemon $NAME -k
+		RET=$?
+	fi
+	return $RET
 
 	# Many daemons don't delete their pidfiles when they exit.
 	# rm -f $PIDFILE
 
-	return $?
+	#return $?
 }
 
 #
@@ -135,7 +142,7 @@ case "$1" in
 	echo "Starting $NAME :" "$DESC" >&2
 	check_handlers
 	[ $? -ne 0 ] && exit 1
-	do_stop
+	#do_stop
 	do_start
 	RET=$?
 	case "$RET" in

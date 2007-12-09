@@ -28,7 +28,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.4.2"
+#define PROGRAM_VERSION	"0.4.3"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -485,6 +485,7 @@ static void main_args(int argc, char *argv[], int *bg, int *log, int *kill_all, 
 						"\t-v\t\tPrint version number\n"
 						"\t-b\t\tRun process as a background daemon\n"
 						"\t-c CONFIG\tRun with specified configuration\n"
+						"\t-k\t\tKill all btnx daemons\n"
 						"\t-h\t\tPrint this text\n");
 				exit(BTNX_ERROR_FATAL);
 			}
