@@ -1,5 +1,11 @@
 btnx ChangeLog
 
+2007-12-10	v.0.4.3
+	* Init script stop command uses btnx to kill all processes. Previous
+	implementation lead to race conditions between init script and btnx
+	processes to read and kill PIDs. Also lead to duplicate btnx processes.
+	Fixes bug #175088: https://bugs.launchpad.net/btnx/+bug/175088
+
 2007-12-08	v.0.4.2
 	* Fixed PID file bug. kill_pids() closed file descriptor that append_pid()
 	required to append the PID of current process. Resulted in duplicate btnx
