@@ -188,7 +188,7 @@ case "$1" in
 	# If the "reload" option is implemented then remove the
 	# 'force-reload' alias
 	#
-	echo "Restarting $NAME :" "$DESC" &>2
+	echo "Restarting $NAME :" "$DESC" >&2
 	do_stop
 	case "$?" in
 	  0|1)
