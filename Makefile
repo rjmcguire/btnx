@@ -2,7 +2,6 @@
 CC = gcc
 CFLAGS = -Wall -g
 LFLAGS =
-#-lusb
 
 DEPS = uinput.h btnx.h config_parser.h device.h revoco.h
 OBJ = btnx.o uinput.o config_parser.o device.o revoco.o
