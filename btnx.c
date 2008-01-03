@@ -28,7 +28,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.4.4"
+#define PROGRAM_VERSION	"0.4.5"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -233,7 +233,7 @@ static void command_execute(btnx_event *bev)
 /* Perform a configuration switch */
 static void config_switch(btnx_event *bev)
 {
-	const char *name;
+	const char *name=NULL;
 	struct timeval now;
 	
 	/* Block in case last config switch button is the same as a current one.
@@ -610,17 +610,19 @@ int main(int argc, char *argv[])
 					continue;
 				if ((bev_index = btnx_event_get(bevs, raw_codes[i].rawcode, raw_codes[i].pressed)) != -1)
 				{
-					if (bevs[bev_index]->pressed == 1 || bevs[bev_index]->type == BUTTON_IMMEDIATE)
+					if (bevs[bev_index]->pressed == 1 || bevs[bev_index]->type == BUTTON_IMMEDIATE
+						|| bevs[bev_index]->type == BUTTON_RELEASE)
 					{
 						if (check_delay(bevs[bev_index]) < 0)
 							continue;
 						gettimeofday(&(bevs[bev_index]->last), NULL);
 					}
 					/* Force release, ignore button release */
-					if (bevs[bev_index]->type == BUTTON_IMMEDIATE &&
+					if (bevs[bev_index]->type == BUTTON_RELEASE &&
 						bevs[bev_index]->pressed == 0)
 						continue;
-					if (bevs[bev_index]->type == BUTTON_IMMEDIATE && 
+					if ((bevs[bev_index]->type == BUTTON_IMMEDIATE ||
+						bevs[bev_index]->type == BUTTON_RELEASE) && 
 						bevs[bev_index]->keycode < BTNX_EXTRA_EVENTS)
 					{
 						bevs[bev_index]->pressed = 1;
@@ -635,7 +637,8 @@ int main(int argc, char *argv[])
 							if ((suppress_release = !suppress_release) != 1)
 								send_extra_event(bevs, bev_index);
 						}
-						else if (bevs[bev_index]->type == BUTTON_IMMEDIATE)
+						else if (bevs[bev_index]->type == BUTTON_IMMEDIATE ||
+								bevs[bev_index]->type == BUTTON_RELEASE)
 							send_extra_event(bevs, bev_index);
 					}
 					else

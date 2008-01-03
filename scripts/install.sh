@@ -89,7 +89,7 @@ else
 	#echo -ne "Making config dir... "
 	mkdir $CONFIG_DIR
 	if [ $? -ne 0 ]; then
-		echo -e "\n* Error: could not make directory: $CONFIG_DIR. \rDid you forget sudo?"
+		echo -e "\n* Error: could not make directory: $CONFIG_DIR. \rAre you root?"
 		exit 1
 	fi
 	echo -ne "."
@@ -121,14 +121,6 @@ else
 	echo -ne "."
 fi
 
-# Copy the default configurations to the config directory.
-#cp -r $DEFAULTS_DIR $CONFIG_DIR
-#if [ $? -ne 0 ]; then
-#	echo "Error: could not copy $DEFAULTS_DIR to $CONFIG_DIR."
-#	exit 1
-#fi
-#echo -ne "."
-
 # Copy the events file to the config directory.
 #echo -ne "Installing events... "
 cp $DATA_DIR/$EVENTS $CONFIG_DIR
@@ -137,29 +129,6 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 echo -ne "."
-
-# Make sure an old config file isn't installed. Won't
-# copy the correct default config otherwise on first run.
-# Create a backup of the old one.
-#CONFIG_BAK=$CONFIG.bak
-#CONFIG_INDEX=1
-#if [ -f $CONFIG_DIR/$CONFIG ]; then
-#	echo "Detected a previous btnx_config file."
-#	echo -ne "Keep old configuration file "
-#	prompt_yn
-#	if [ $? -ne 1 ]; then
-#		while [ -f $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX} ]; do
-#			CONFIG_INDEX=`expr $CONFIG_INDEX + 1`
-#		done
-#		mv $CONFIG_DIR/$CONFIG $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}
-#		if [ $? -ne 0 ]; then
-#			echo "Error: could not backup old config file."
-#			exit 1
-#		fi
-#		echo ""
-#		echo "Backed up old configuration file to $CONFIG_DIR/${CONFIG_BAK}${CONFIG_INDEX}"
-#	fi
-#f
 
 # Copy the binary file to the binary directory.
 #echo -ne "Installing binary files... "
@@ -202,7 +171,7 @@ else
 fi
 
 echo -e "$NAME has been successfully installed!\n"
-echo -e "You can type 'sudo /etc/init.d/btnx start' to start btnx if you have made a configuration file with btnx-config."
+echo -e "You can type '/etc/init.d/btnx start' as root to start btnx if you have made a configuration file with btnx-config."
 #$INIT_DIR/$NAME start
 
 

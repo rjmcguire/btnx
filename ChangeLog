@@ -1,5 +1,9 @@
 btnx ChangeLog
 
+2008-01-03	v.0.4.5
+	* Allows double-clicking by manually changing a button event type=1. This
+	undocumented feature was blocked by the force release property.
+
 2007-12-11	v.0.4.4
 	* Fixed "2" file creation bug in init script.
 

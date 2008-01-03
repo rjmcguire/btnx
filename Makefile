@@ -1,6 +1,6 @@
 
 CC = gcc
-CFLAGS = -Wall -g
+CFLAGS = -Wall -O2 #-g
 LFLAGS =
 
 DEPS = uinput.h btnx.h config_parser.h device.h revoco.h

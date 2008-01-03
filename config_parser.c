@@ -255,7 +255,7 @@ static void config_add_mod(btnx_event *e, int mod)
  * and its arguments for execv() */
 static char **config_split_command(char *cmd)
 {
-	char *beg, *end, closing;
+	char *beg, *end, closing='\0';
 	int stop=0, i=0, enclosed=0;
 	char **args=NULL;
 	
@@ -435,7 +435,7 @@ static const char *config_add_value(btnx_event *e,
 		if (!strcasecmp(option, "force_release"))
 		{
 			if (strtol(value, NULL, 10) == 1)
-				e->type = BUTTON_IMMEDIATE;
+				e->type = BUTTON_RELEASE;
 			return option;
 		}
 		if (!strcasecmp(option, "name"))

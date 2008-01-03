@@ -52,7 +52,8 @@ enum
 enum
 {
 	BUTTON_NORMAL=0,	/* Send pressed and release signals separately when received */
-	BUTTON_IMMEDIATE	/* Send both pressed and released signals immediately */
+	BUTTON_IMMEDIATE,	/* Send both pressed and released signals immediately */
+	BUTTON_RELEASE		/* Same as immediate, but release event is ignored */
 };
 
 /* Contains all necessary information to handle a button event */
