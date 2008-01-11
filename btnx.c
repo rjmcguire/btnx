@@ -378,7 +378,7 @@ static void kill_pids(int fd)
 		fprintf(stderr, OUT_PRE "Warning: kill_pids pid overflow.\n");
 	ftruncate(fd, 0);
 	//fsync(fd);
-	//close(fd);
+	//close(fd);	/* Resulted in kill bug, do not uncomment */
 }
 
 /* Append own PID to PID file, optionally kill previous processes */
