@@ -99,6 +99,7 @@ void uinput_key_press(struct btnx_event *bev)
 	struct input_event event;
 	int fd;
 	int i;
+	int mod_pressed=0;
 	
 	if (uinput_mouse_fd < 0 || uinput_kbd_fd < 0)
 	{
@@ -128,8 +129,11 @@ void uinput_key_press(struct btnx_event *bev)
   		event.value = 0;
   		write(uinput_kbd_fd, &event, sizeof(event));
   		
-  		usleep(10);	// Needs a little delay for mouse + modifier combo
+  		mod_pressed = 1;
 	}
+	
+	if (mod_pressed == 1)
+	    usleep(200);    // Needs a little delay for mouse + modifier combo
 	
 	if (bev->keycode > BTNX_EXTRA_EVENTS)
 	{
