@@ -188,6 +188,9 @@ static hexdump *btnx_event_read(int fd)
 	int ret, i, j=0;
 	unsigned char buffer[INPUT_BUFFER_SIZE];
 	
+	/* NOTE: this should really be reading an input_event struct as defined
+	 * in linux/input.h. However, btnx-config will have to be changed to reflect
+	 * this change, and btnx-config backup files will have to be outdated. */
 	memset(buffer, '\0', INPUT_BUFFER_SIZE);
 	if ((ret = read(fd, buffer, INPUT_BUFFER_SIZE)) < 1)
 		return 0;
