@@ -28,7 +28,7 @@
  *------------------------------------------------------------------------*/
  
 #define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.4.6"
+#define PROGRAM_VERSION	"0.4.7"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -185,13 +185,14 @@ static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 static hexdump *btnx_event_read(int fd)
 {
 	static hexdump codes[MAX_RAWCODES];
-	int ret, i, j=0;
-	unsigned char buffer[INPUT_BUFFER_SIZE];
+	int ret, i;
+	//unsigned char buffer[INPUT_BUFFER_SIZE];
+	struct input_event ev;
 	
 	/* NOTE: this should really be reading an input_event struct as defined
 	 * in linux/input.h. However, btnx-config will have to be changed to reflect
 	 * this change, and btnx-config backup files will have to be outdated. */
-	memset(buffer, '\0', INPUT_BUFFER_SIZE);
+	/*memset(buffer, '\0', INPUT_BUFFER_SIZE);
 	if ((ret = read(fd, buffer, INPUT_BUFFER_SIZE)) < 1)
 		return 0;
 	
@@ -205,13 +206,31 @@ static hexdump *btnx_event_read(int fd)
 							CHAR2INT(buffer[5 + i*HEXDUMP_SIZE], 0);
 		codes[j].pressed =	buffer[4+i*HEXDUMP_SIZE];
 		j++;
-	}
-	for (; j < MAX_RAWCODES; j++)
-	{
-		codes[j].rawcode = 0;
-		codes[j].pressed = 0;
-	}
+	}*/
 
+	i=0;
+	//for (i=0; i < MAX_RAWCODES; i++) {
+	if ((ret = read(fd, &ev, sizeof(ev))) > 0) {
+		if (((ev.code == 0x0000 || ev.code == 0x0001) && ev.type == 0x0002) || (ev.code == 0x0000 && ev.type == 0x0000)) {
+			i--;
+			codes[i].rawcode = 0;
+			codes[i].pressed = 0;
+		}
+		codes[i].rawcode = ev.code & 0xFFFF;
+		if (ev.type == 0x0002)
+			codes[i].rawcode += (ev.value & 0xFF) << 16;
+		codes[i].rawcode += (ev.type & 0xFF) << 24;
+		codes[i].pressed = ev.value;
+		//printf("rawcode=%08x, pressed=%04x\n", codes[i].rawcode, codes[i].pressed);
+	}
+	
+	i++;
+	for (; i < MAX_RAWCODES; i++)
+	{
+		codes[i].rawcode = 0;
+		codes[i].pressed = 0;
+	}
+	
 	return codes;
 }
 

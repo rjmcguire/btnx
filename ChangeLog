@@ -1,10 +1,16 @@
 btnx ChangeLog
 
-2008-02-21  v.0.4.6
-        * Added some more delay after modifier key press. Too short delay caused
-        mouse button keycodes to be registered on some systems before modifier 
-        keys. Resulted in combos not working properly.
-        Fixes bug #193262: https://bugs.launchpad.net/btnx/+bug/193262
+2008-03-06	v.0.4.7
+	* Compatible with btnx-config v. >= 0.4.7
+	* Kernel 2.6.24 input interface changes required changes to reading
+	the configuration data and reading event handlers.
+	* Reads event handlers like it should have since the beginning.
+
+2008-02-21	v.0.4.6
+	* Added some more delay after modifier key press. Too short delay caused
+	mouse button keycodes to be registered on some systems before modifier 
+	keys. Resulted in combos not working properly.
+	Fixes bug #193262: https://bugs.launchpad.net/btnx/+bug/193262
 
 2008-01-03	v.0.4.5
 	* Allows double-clicking by manually changing a button event type=1. This
