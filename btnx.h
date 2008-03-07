@@ -75,11 +75,11 @@ typedef struct btnx_event
 } btnx_event;
 
 /* Most important data from hexdumping an event handler */
-typedef struct hexdump
+typedef struct hexdump_s
 {
 	int rawcode;	/* 32-bit button rawcode */
 	int pressed;	/* Specifies whether button was pressed or released */
-} hexdump;
+} hexdump_t;
 
 int open_handler(char *name, int flags);
 

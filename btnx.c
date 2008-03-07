@@ -88,7 +88,7 @@ const char handler_locations[][15] =
 static const char *get_handler_location(int index);
 static int find_handler(int flags, int vendor, int product, int type);
 static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed);
-static hexdump *btnx_event_read(int fd);
+static hexdump_t btnx_event_read(int fd);
 static void command_execute(btnx_event *bev);
 static void config_switch(btnx_event *bev);
 static void send_extra_event(btnx_event **bevs, int index);
@@ -182,56 +182,25 @@ static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 }
 
 /* Extract the rawcode(s) of an input event. */
-static hexdump *btnx_event_read(int fd)
+static hexdump_t btnx_event_read(int fd)
 {
-	static hexdump codes[MAX_RAWCODES];
-	int ret, i;
-	//unsigned char buffer[INPUT_BUFFER_SIZE];
+	hexdump_t hexdump = {.rawcode = 0, .pressed = 0};
+	int ret;
 	struct input_event ev;
-	
-	/* NOTE: this should really be reading an input_event struct as defined
-	 * in linux/input.h. However, btnx-config will have to be changed to reflect
-	 * this change, and btnx-config backup files will have to be outdated. */
-	/*memset(buffer, '\0', INPUT_BUFFER_SIZE);
-	if ((ret = read(fd, buffer, INPUT_BUFFER_SIZE)) < 1)
-		return 0;
-	
-	for (i=0; (i < (ret / HEXDUMP_SIZE) - 1) && (i < MAX_RAWCODES - 1); i++)
-	{
-		if ((int)buffer[1 + i*HEXDUMP_SIZE] != 0x00)
-			continue;
-		codes[j].rawcode = 	CHAR2INT(buffer[0 + i*HEXDUMP_SIZE], 3) | 
-							CHAR2INT(buffer[3 + i*HEXDUMP_SIZE], 2) | 
-							CHAR2INT(buffer[2 + i*HEXDUMP_SIZE], 1) | 
-							CHAR2INT(buffer[5 + i*HEXDUMP_SIZE], 0);
-		codes[j].pressed =	buffer[4+i*HEXDUMP_SIZE];
-		j++;
-	}*/
 
-	i=0;
-	//for (i=0; i < MAX_RAWCODES; i++) {
 	if ((ret = read(fd, &ev, sizeof(ev))) > 0) {
 		if (((ev.code == 0x0000 || ev.code == 0x0001) && ev.type == 0x0002) || (ev.code == 0x0000 && ev.type == 0x0000)) {
-			i--;
-			codes[i].rawcode = 0;
-			codes[i].pressed = 0;
+			hexdump.rawcode = 0;
+			hexdump.pressed = 0;
 		}
-		codes[i].rawcode = ev.code & 0xFFFF;
+		hexdump.rawcode = ev.code & 0xFFFF;
 		if (ev.type == 0x0002)
-			codes[i].rawcode += (ev.value & 0xFF) << 16;
-		codes[i].rawcode += (ev.type & 0xFF) << 24;
-		codes[i].pressed = ev.value;
-		//printf("rawcode=%08x, pressed=%04x\n", codes[i].rawcode, codes[i].pressed);
+			hexdump.rawcode += (ev.value & 0xFF) << 16;
+		hexdump.rawcode += (ev.type & 0xFF) << 24;
+		hexdump.pressed = ev.value;
 	}
 	
-	i++;
-	for (; i < MAX_RAWCODES; i++)
-	{
-		codes[i].rawcode = 0;
-		codes[i].pressed = 0;
-	}
-	
-	return codes;
+	return hexdump;
 }
 
 /* Execute a shell script or binary file */
@@ -241,6 +210,8 @@ static void command_execute(btnx_event *bev)
 	
 	if (!(pid = fork()))
 	{
+		/* Change this to use su to set environments correctly for certain
+		 * programs */
 		setuid(bev->uid);
 		execv(bev->args[0], bev->args);
 	}
@@ -519,11 +490,10 @@ int main(int argc, char *argv[])
 {
 	int fd_ev_btn=0, fd_ev_key=-1;
 	fd_set fds;
-	hexdump *raw_codes;
+	hexdump_t hexdump;
 	int max_fd, ready;
 	btnx_event **bevs;
 	int bev_index;
-	int i;
 	int suppress_release=1;
 	int bg=0, log=0;
 	char *config_name=NULL;
@@ -615,57 +585,54 @@ int main(int argc, char *argv[])
 		else
 		{
 			if (FD_ISSET(fd_ev_btn, &fds))
-				raw_codes = btnx_event_read(fd_ev_btn);
+				hexdump = btnx_event_read(fd_ev_btn);
 			else if (fd_ev_key != 0)
 			{
 				if (FD_ISSET(fd_ev_key, &fds))
-					raw_codes = btnx_event_read(fd_ev_key);
+					hexdump = btnx_event_read(fd_ev_key);
 				else
 					continue;
 			}
 			else
 				continue;
 			
-			for (i=0; (i < MAX_RAWCODES); i++)
+			if (hexdump.rawcode == 0)
+				continue;
+			if ((bev_index = btnx_event_get(bevs, hexdump.rawcode, hexdump.pressed)) != -1)
 			{
-				if (raw_codes[i].rawcode == 0)
-					continue;
-				if ((bev_index = btnx_event_get(bevs, raw_codes[i].rawcode, raw_codes[i].pressed)) != -1)
+				if (bevs[bev_index]->pressed == 1 || bevs[bev_index]->type == BUTTON_IMMEDIATE
+					|| bevs[bev_index]->type == BUTTON_RELEASE)
 				{
-					if (bevs[bev_index]->pressed == 1 || bevs[bev_index]->type == BUTTON_IMMEDIATE
-						|| bevs[bev_index]->type == BUTTON_RELEASE)
-					{
-						if (check_delay(bevs[bev_index]) < 0)
-							continue;
-						gettimeofday(&(bevs[bev_index]->last), NULL);
-					}
-					/* Force release, ignore button release */
-					if (bevs[bev_index]->type == BUTTON_RELEASE &&
-						bevs[bev_index]->pressed == 0)
+					if (check_delay(bevs[bev_index]) < 0)
 						continue;
-					if ((bevs[bev_index]->type == BUTTON_IMMEDIATE ||
-						bevs[bev_index]->type == BUTTON_RELEASE) && 
-						bevs[bev_index]->keycode < BTNX_EXTRA_EVENTS)
+					gettimeofday(&(bevs[bev_index]->last), NULL);
+				}
+				/* Force release, ignore button release */
+				if (bevs[bev_index]->type == BUTTON_RELEASE &&
+					bevs[bev_index]->pressed == 0)
+					continue;
+				if ((bevs[bev_index]->type == BUTTON_IMMEDIATE ||
+					bevs[bev_index]->type == BUTTON_RELEASE) && 
+					bevs[bev_index]->keycode < BTNX_EXTRA_EVENTS)
+				{
+					bevs[bev_index]->pressed = 1;
+					uinput_key_press(bevs[bev_index]);
+					bevs[bev_index]->pressed = 0;
+					uinput_key_press(bevs[bev_index]);
+				}
+				else if (bevs[bev_index]->keycode > BTNX_EXTRA_EVENTS)
+				{
+					if (bevs[bev_index]->type == BUTTON_NORMAL)
 					{
-						bevs[bev_index]->pressed = 1;
-						uinput_key_press(bevs[bev_index]);
-						bevs[bev_index]->pressed = 0;
-						uinput_key_press(bevs[bev_index]);
-					}
-					else if (bevs[bev_index]->keycode > BTNX_EXTRA_EVENTS)
-					{
-						if (bevs[bev_index]->type == BUTTON_NORMAL)
-						{
-							if ((suppress_release = !suppress_release) != 1)
-								send_extra_event(bevs, bev_index);
-						}
-						else if (bevs[bev_index]->type == BUTTON_IMMEDIATE ||
-								bevs[bev_index]->type == BUTTON_RELEASE)
+						if ((suppress_release = !suppress_release) != 1)
 							send_extra_event(bevs, bev_index);
 					}
-					else
-						uinput_key_press(bevs[bev_index]);
+					else if (bevs[bev_index]->type == BUTTON_IMMEDIATE ||
+							bevs[bev_index]->type == BUTTON_RELEASE)
+						send_extra_event(bevs, bev_index);
 				}
+				else
+					uinput_key_press(bevs[bev_index]);
 			}
 		}
 		
