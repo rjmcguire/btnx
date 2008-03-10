@@ -8,10 +8,10 @@
 #define CONFIG_PARSER_H_
 
 #define CONFIG_NAME				"btnx_config"
-#define CONFIG_PATH				"/etc/btnx"
+//#define CONFIG_PATH				"/etc/btnx"
 #define EVENTS_NAME				"events"
-#define DEFAULTS_CONFIG_PATH	"/etc/btnx/defaults"
-#define DEFAULT_CONFIG_NAME		"default_config_"
+//#define DEFAULTS_CONFIG_PATH	"/etc/btnx/defaults"
+//#define DEFAULT_CONFIG_NAME		"default_config_"
 #define CONFIG_MANAGER_FILE		CONFIG_PATH "/btnx_manager"
 
 #define CONFIG_PARSE_BUFFER_SIZE			512

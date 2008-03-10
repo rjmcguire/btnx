@@ -1,0 +1,21 @@
+## src/Makefile.am
+
+sbin_PROGRAMS = btnx
+AM_CFLAGS = -Wall 
+
+btnx_SOURCES = \
+	btnx.c \
+	config_parser.c \
+	device.c \
+	revoco.c \
+	uinput.c \
+## HEADERS
+	btnx.h \
+	config_parser.h \
+	device.h \
+	revoco.h \
+	uinput.h
+
+uninstall-local:
+	@echo "Stopping any leftover btnx processes."
+	if test -x "$(DESTDIR)$(sbindir)/$(PACKAGE)"; then $(DESTDIR)$(sbindir)/$(PACKAGE) -k; fi

@@ -27,9 +27,6 @@
  * original author. See revoco.c for contact info of the author.          *
  *------------------------------------------------------------------------*/
  
-#define PROGRAM_NAME	"btnx"
-#define PROGRAM_VERSION	"0.4.7"
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -51,13 +48,16 @@
 #include "device.h"
 #include "revoco.h"
 
+#define PROGRAM_NAME		PACKAGE
+#define PROGRAM_VERSION		VERSION
+
 #define CHAR2INT(c, x) (((int)(c)) << ((x) * 8))
 #define INPUT_BUFFER_SIZE		512
 #define NUM_EVENT_HANDLERS		20
 #define NUM_HANDLER_LOCATIONS	3
 #define TYPE_MOUSE				0
 #define TYPE_KBD				1
-#define PID_FILE				"/var/run/btnx.pid"
+#define PID_FILE				PID_PATH "/btnx.pid"
 
 /*
  * The following macros are from mouseemu, to help distinguish
@@ -441,7 +441,7 @@ static void main_args(int argc, char *argv[], int *bg, int *log, int *kill_all, 
 			{
 				printf(	PROGRAM_NAME " v." PROGRAM_VERSION "\n"
 						"Author: Olli Salonen <oasalonen@gmail.com>\n"
-						"Compatible with btnx-config >= v.0.4.0\n");
+						"Compatible with btnx-config >= v.0.4.7\n");
 				exit(BTNX_EXIT_NORMAL);	
 			}
 			/* Start with specific configuration */

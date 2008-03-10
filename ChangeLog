@@ -1,6 +1,9 @@
 btnx ChangeLog
 
 2008-03-06	v.0.4.7
+	* btnx has been converted to use GNU autotools. Use ./configure before
+	running make and install. See ./configure --help for additional
+	arguments.
 	* Compatible with btnx-config v. >= 0.4.7
 	* Kernel 2.6.24 input interface changes required changes to reading
 	the configuration data and reading event handlers.

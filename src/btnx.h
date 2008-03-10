@@ -8,6 +8,7 @@
 #define BTNX_H_
 
 #include <sys/time.h>
+#include "../config.h"
 
 #define MAX_MODS		3
 #define MAX_RAWCODES	10
