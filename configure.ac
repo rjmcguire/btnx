@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(btnx, 0.4.7, oasalone@gmail.com)
+AC_INIT(btnx, 0.4.8, oasalone@gmail.com)
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_SRCDIR([src/btnx.h])
 AC_CONFIG_HEADER([config.h])
@@ -16,16 +16,16 @@ AC_PROG_MAKE_SET
 AC_GNU_SOURCE
 
 # Checks for libraries.
+PKG_CHECK_MODULES(LIBDAEMON, libdaemon >= 0.10)
 
 # Check command line arguments
 AC_ARG_VAR(init_scripts_path, The init script directory for your system. Default is "/etc/init.d". Do not append a final '/'.)
 AC_ARG_VAR(config_path, The path to btnx configuration files. Default is "/etc/btnx". Do not append a final '/'.)
 AC_ARG_VAR(init_tool, Controls whether installation attempts to register the btnx init script. Set to "no" to disable. Otherwise, configure autodetects.)
-AC_ARG_VAR(pid_path, The directory where to store btnx PID files. Default is "/var/run". Do not append a final '/'.)
+AC_ARG_VAR(output_syslog, Set to "yes" to redirect btnx output to syslog when started with init script. Default is "no".)
 
 test -z "$init_scripts_path" && init_scripts_path=/etc/init.d
 test -z "$config_path" && config_path=/etc/btnx
-test -z "$pid_path" && pid_path=/var/run
 
 # Series of checks to see whether init script should be installed and how
 # -----------------------------------------------------------------------
@@ -55,13 +55,20 @@ AC_SUBST(init_add_cmd)
 AC_SUBST(init_del_cmd)
 # -----------------------------------------------------------------------
 
+if test -z "$output_syslog" || test x$output_syslog = xno; then
+	arg_syslog=
+elif test x$output_syslog = xyes; then
+	arg_syslog=-l
+else
+	AC_MSG_ERROR(Invalid value supplied for output_syslog)
+fi
+
 initdir=$init_scripts_path
 configdir=$config_path
 AC_SUBST(initdir)
-AC_SUBST(pid_path)
 AC_SUBST(configdir)
+AC_SUBST(arg_syslog)
 AC_DEFINE_UNQUOTED(CONFIG_PATH, ["$config_path"], [Path to btnx configurations])
-AC_DEFINE_UNQUOTED(PID_PATH, ["$pid_path"], [Path to btnx PID file])
 
 #### STILL NEED CHECKING: cat and grep ####
 # Check for su

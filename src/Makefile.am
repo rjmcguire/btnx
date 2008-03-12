@@ -1,7 +1,8 @@
 ## src/Makefile.am
 
 sbin_PROGRAMS = btnx
-AM_CFLAGS = -Wall 
+AM_CFLAGS = -Wall `pkg-config --cflags libdaemon`
+btnx_LDFLAGS = `pkg-config --libs libdaemon`
 
 btnx_SOURCES = \
 	btnx.c \

@@ -28,6 +28,8 @@ enum
 	BTNX_ERROR_BAD_CONFIG,
 	BTNX_ERROR_OPEN_HANDLER,
 	BTNX_ERROR_OPEN_UINPUT,
+	BTNX_ERROR_CREATE_PID_FILE,
+	BTNX_ERROR_INIT_SIGNALS,
 };
 
 /* btnx specific events, not specified by the input interface */

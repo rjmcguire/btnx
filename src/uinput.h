@@ -15,6 +15,7 @@
 
 
 int uinput_init(const char *dev_name);
+void uinput_close(void);
 void uinput_key_press(btnx_event *bev);
 
 #endif /*UINPUT_H_*/

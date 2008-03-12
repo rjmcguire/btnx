@@ -47,6 +47,8 @@ am_btnx_OBJECTS = btnx.$(OBJEXT) config_parser.$(OBJEXT) \
 	device.$(OBJEXT) revoco.$(OBJEXT) uinput.$(OBJEXT)
 btnx_OBJECTS = $(am_btnx_OBJECTS)
 btnx_LDADD = $(LDADD)
+btnx_LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(btnx_LDFLAGS) $(LDFLAGS) \
+	-o $@
 DEFAULT_INCLUDES = -I. -I$(top_builddir)@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
@@ -85,6 +87,8 @@ INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LDFLAGS = @LDFLAGS@
+LIBDAEMON_CFLAGS = @LIBDAEMON_CFLAGS@
+LIBDAEMON_LIBS = @LIBDAEMON_LIBS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LTLIBOBJS = @LTLIBOBJS@
@@ -98,6 +102,7 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PKG_CONFIG = @PKG_CONFIG@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -113,6 +118,7 @@ am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
+arg_syslog = @arg_syslog@
 bindir = @bindir@
 build_alias = @build_alias@
 builddir = @builddir@
@@ -141,8 +147,8 @@ localstatedir = @localstatedir@
 mandir = @mandir@
 mkdir_p = @mkdir_p@
 oldincludedir = @oldincludedir@
+output_syslog = @output_syslog@
 pdfdir = @pdfdir@
-pid_path = @pid_path@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
@@ -153,7 +159,8 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CFLAGS = -Wall 
+AM_CFLAGS = -Wall `pkg-config --cflags libdaemon`
+btnx_LDFLAGS = `pkg-config --libs libdaemon`
 btnx_SOURCES = \
 	btnx.c \
 	config_parser.c \
@@ -224,7 +231,7 @@ clean-sbinPROGRAMS:
 	-test -z "$(sbin_PROGRAMS)" || rm -f $(sbin_PROGRAMS)
 btnx$(EXEEXT): $(btnx_OBJECTS) $(btnx_DEPENDENCIES) 
 	@rm -f btnx$(EXEEXT)
-	$(LINK) $(btnx_OBJECTS) $(btnx_LDADD) $(LIBS)
+	$(btnx_LINK) $(btnx_OBJECTS) $(btnx_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)

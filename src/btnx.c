@@ -42,14 +42,19 @@
 #include <signal.h>
 #include <ctype.h>
 
+#include <libdaemon/dfork.h>
+#include <libdaemon/dsignal.h>
+#include <libdaemon/dlog.h>
+#include <libdaemon/dpid.h>
+
 #include "uinput.h"
 #include "btnx.h"
 #include "config_parser.h"
 #include "device.h"
 #include "revoco.h"
 
-#define PROGRAM_NAME		PACKAGE
-#define PROGRAM_VERSION		VERSION
+#define PROGRAM_NAME			PACKAGE
+#define PROGRAM_VERSION			VERSION
 
 #define CHAR2INT(c, x) (((int)(c)) << ((x) * 8))
 #define INPUT_BUFFER_SIZE		512
@@ -57,7 +62,6 @@
 #define NUM_HANDLER_LOCATIONS	3
 #define TYPE_MOUSE				0
 #define TYPE_KBD				1
-#define PID_FILE				PID_PATH "/btnx.pid"
 
 /*
  * The following macros are from mouseemu, to help distinguish
@@ -90,12 +94,10 @@ static int find_handler(int flags, int vendor, int product, int type);
 static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed);
 static hexdump_t btnx_event_read(int fd);
 static void command_execute(btnx_event *bev);
-static void config_switch(btnx_event *bev);
+static void config_switch(btnx_event **bevs, int index);
 static void send_extra_event(btnx_event **bevs, int index);
 static int check_delay(btnx_event *bev);
-static void kill_pids(int fd);
-static void pid_file(int kill_old, int append);
-static void main_args(int argc, char *argv[], int *bg, int *log, int *kill_all, char **config_file);
+static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **config_file);
 
 
 /* To simplify the open_handler loop. Can't think of another reason why I
@@ -121,7 +123,7 @@ int open_handler(char *name, int flags)
 		sprintf(loc_buffer, "%s/%s", loc, name);
 		if ((fd = open(loc_buffer, flags)) >= 0)
 		{
-			printf(OUT_PRE "Opened handler: %s\n", loc_buffer);
+			daemon_log(LOG_DEBUG, OUT_PRE "Opened handler: %s", loc_buffer);
 			return fd;
 		}
 	}
@@ -217,14 +219,14 @@ static void command_execute(btnx_event *bev)
 	}
 	else if (pid < 0)
 	{
-		fprintf(stderr, OUT_PRE "Error: could not fork: %s\n", strerror(errno));
+		daemon_log(LOG_WARNING, OUT_PRE "Error: could not fork: %s", strerror(errno));
 		return;
 	}
 	return;
 }
 
 /* Perform a configuration switch */
-static void config_switch(btnx_event *bev)
+static void config_switch(btnx_event **bev, int index)
 {
 	const char *name=NULL;
 	struct timeval now;
@@ -239,7 +241,7 @@ static void config_switch(btnx_event *bev)
 			return;
 	/* ------------------------------------------------------------------- */
 	
-	switch (bev->switch_type)
+	switch (bev[index]->switch_type)
 	{
 	case CONFIG_SWITCH_NEXT:
 		name = config_get_next();
@@ -248,18 +250,20 @@ static void config_switch(btnx_event *bev)
 		name = config_get_prev();
 		break;
 	case CONFIG_SWITCH_TO:
-		name = bev->switch_name;
+		name = bev[index]->switch_name;
 	}
 	
 	if (name == NULL)
 	{
-		fprintf(stderr, OUT_PRE "Warning: config switch failed. Invalid configuration "
-				"name.\n");
+		daemon_log(LOG_WARNING, OUT_PRE "Warning: config switch failed. "
+				"Invalid configuration name.");
 		return;
 	}
 	
-	printf(OUT_PRE "switching to config: %s\n", name);
-	
+	daemon_log(LOG_DEBUG, OUT_PRE "switching to config: %s", name);
+	uinput_close();
+	daemon_signal_done();
+	daemon_pid_file_remove();
 	execl(g_exec_path, g_exec_path, "-c", name, (char *) NULL);
 }
 
@@ -276,7 +280,7 @@ static void send_extra_event(btnx_event **bevs, int index)
 	}
 	if (tmp_kc == CONFIG_SWITCH)
 	{
-		config_switch(bevs[index]);
+		config_switch(bevs, index);
 		return;
 	}
 	
@@ -311,120 +315,8 @@ static int check_delay(btnx_event *bev)
 	return -1;
 }
 
-/* Kill any previous btnx processes found in the PID file */
-static void kill_pids(int fd)
-{
-	char tmp[16];
-	int x=0, len;
-	pid_t pid;
-	
-	if (fd < 0)
-	{
-		fprintf(stderr, OUT_PRE "Warning: kill_pids was passed an invalid fd.\n");
-		return;
-	}
-	
-	lseek(fd, 0, SEEK_SET);
-	memset(tmp, '\0', 15);
-	while (x<15)
-	{
-		while (tmp[x] == '\0')
-		{
-			if ((len = read(fd, tmp+x, 1)) < 0)
-			{
-				fprintf(stderr, OUT_PRE "Error: kill_pids read error: %s\n",
-						strerror(errno));
-				exit(BTNX_ERROR_FATAL);
-			}
-			if (len == 0)
-				break;
-		}
-		if (x==0 && (tmp[x] == '\0' || tmp[x] == EOF))
-			break;
-		if (!isdigit(tmp[x]))
-		{
-			tmp[x+1] = '\0';
-			pid = (pid_t)strtol(tmp, NULL, 10);
-			/* Don't kill self or any process groups */
-			if (pid >= 1 && pid != getpid())
-			{
-				if (kill(pid, SIGKILL) < 0)
-				{
-					fprintf(stderr, OUT_PRE "old btnx process was not killed: %d: %s\n",
-							pid, strerror(errno));
-				}
-			}
-			else
-			{
-				fprintf(stderr, OUT_PRE "old btnx process was not killed: %d %d\n",
-						getpid(), pid);
-			}
-			if (tmp[x] == '\0' || tmp[x] == EOF)
-				break;
-			memset(tmp, '\0', 15);
-			x=0;
-			continue;
-		}
-		x++;
-	}
-	if (x >= 15)
-		fprintf(stderr, OUT_PRE "Warning: kill_pids pid overflow.\n");
-	ftruncate(fd, 0);
-	//fsync(fd);
-	//close(fd);	/* Resulted in kill bug, do not uncomment */
-}
-
-/* Append own PID to PID file, optionally kill previous processes */
-static void pid_file(int kill_old, int append)
-{
-	int fd, flags;
-	char tmp[16];
-	
-	if (kill_old == 1)
-		flags = O_RDWR | O_CREAT;
-	else
-		flags = O_WRONLY | O_CREAT | O_APPEND;
-	
-	/* Open for write with -rw-r--r-- permissions */
-	if ((fd = open(PID_FILE, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) < 0)
-	{
-		fprintf(stderr, OUT_PRE "Warning: failed to create pid file %s: %s\n", 
-				PID_FILE, strerror(errno));
-		exit(BTNX_ERROR_FATAL);
-		//return;	
-	}
-	/* Lock the file for this process, or wait for lock release */
-	if (flock(fd, LOCK_EX))
-	{
-		fprintf(stderr, OUT_PRE "Error: pid file lock set failed.\n");
-		close(fd);
-		exit(BTNX_ERROR_FATAL);
-	}
-	/* Kill old processes */
-	if (kill_old == 1)
-		kill_pids(fd);
-	
-	/* Append pid */
-	if (append)
-	{
-		sprintf(tmp, "%d ", getpid());
-		if ((write(fd, tmp, strlen(tmp))) < strlen(tmp))
-		{
-			fprintf(stderr, OUT_PRE "Warning: write error to pid file %s: %s\n",
-					PID_FILE, strerror(errno));
-			flock(fd, LOCK_UN);
-			close(fd);
-			exit(BTNX_ERROR_FATAL);
-		}
-	}
-	fsync(fd);
-	/* Release the PID file lock */
-	flock(fd, LOCK_UN);
-	close(fd);
-}
-
 /* Parses command line arguments. */
-static void main_args(int argc, char *argv[], int *bg, int *log, int *kill_all, char **config_file)
+static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **config_file)
 {
 	g_exec_path = argv[0];
 	
@@ -451,7 +343,7 @@ static void main_args(int argc, char *argv[], int *bg, int *log, int *kill_all, 
 				{
 					if (strlen(argv[x+1]) >= CONFIG_NAME_MAX_SIZE)
 					{
-						fprintf(stderr, OUT_PRE "Error: invalid configuration name.\n");
+						daemon_log(LOG_ERR, OUT_PRE "Error: invalid configuration name.");
 						goto usage;
 					}
 					*config_file = (char *) malloc((strlen(argv[x+1])+1) * sizeof(char));
@@ -460,26 +352,27 @@ static void main_args(int argc, char *argv[], int *bg, int *log, int *kill_all, 
 				}
 				else
 				{
-					fprintf(stderr, OUT_PRE "Error: -c argument used but no "
-							"configuration file name specified.\n");
+					daemon_log(LOG_ERR, OUT_PRE "Error: -c argument used but no "
+							"configuration file name specified.");
 					goto usage;
 				}
 			}
-			/* Output stderr to log file */
+			/* Output to syslog */
 			else if (!strncmp(argv[x], "-l", 2))
-				*log = 1;
+				daemon_log_use = DAEMON_LOG_SYSLOG;
 			else if (!strncmp(argv[x], "-k", 2))
 				*kill_all = 1;
 			else
 			{
 				usage:
-				printf(	PROGRAM_NAME " usage:\n"
+				daemon_log(LOG_INFO, PROGRAM_NAME " usage:\n"
 						"\tArgument:\tDescription:\n"
 						"\t-v\t\tPrint version number\n"
 						"\t-b\t\tRun process as a background daemon\n"
 						"\t-c CONFIG\tRun with specified configuration\n"
 						"\t-k\t\tKill all btnx daemons\n"
-						"\t-h\t\tPrint this text\n");
+				        "\t-l\t\tRedirect output to syslog\n"
+						"\t-h\t\tPrint this text");
 				exit(BTNX_ERROR_FATAL);
 			}
 		}
@@ -488,48 +381,55 @@ static void main_args(int argc, char *argv[], int *bg, int *log, int *kill_all, 
 
 int main(int argc, char *argv[])
 {
-	int fd_ev_btn=0, fd_ev_key=-1;
+	int fd_ev_btn=0, fd_ev_key=-1, fd_daemon=0;
 	fd_set fds;
-	hexdump_t hexdump;
+	hexdump_t hexdump = {.rawcode=0, .pressed=0};
 	int max_fd, ready;
 	btnx_event **bevs;
 	int bev_index;
 	int suppress_release=1;
-	int bg=0, log=0;
+	int bg=0, ret=BTNX_EXIT_NORMAL;
 	char *config_name=NULL;
 	int kill_all=0;
+	pid_t pid;
 	
-	main_args(argc, argv, &bg, &log, &kill_all, &config_name);
+	daemon_pid_file_ident = daemon_log_ident = daemon_ident_from_argv0(argv[0]);
+	daemon_log_use = DAEMON_LOG_STDERR;
+	
+	main_args(argc, argv, &bg, &kill_all, &config_name);
 	
 	if (kill_all)
 	{
-		pid_file(1, 0);
-		exit(0);
+		if ((ret = daemon_pid_file_kill_wait(SIGINT, 5)) < 0) {
+			daemon_log(LOG_WARNING, OUT_PRE "Failed to kill previous btnx processes");
+		}
+		exit(BTNX_EXIT_NORMAL);
 	}
-	else
-		pid_file(1, 1);
-	
-	if (log)
-	{
-		/* Redirect stderr output to a log file */
-		stderr = freopen("/etc/btnx/btnx_log", "a", stderr);
-		fprintf(stderr, OUT_PRE "btnx started\n");
+	if ((pid = daemon_pid_file_is_running()) >= 0) {
+		daemon_log(LOG_WARNING, OUT_PRE "Previous daemon already running. Killing it.");
+		if ((ret = daemon_pid_file_kill_wait(SIGINT, 5)) < 0) {
+			daemon_log(LOG_WARNING, OUT_PRE "Failed to kill previous btnx process %u", pid);
+			daemon_log(LOG_WARNING, OUT_PRE "Exit forced");
+			kill(pid, SIGKILL);
+			daemon_pid_file_remove();
+			//exit(BTNX_ERROR_FATAL);
+		}
 	}
 	
 	if (system("modprobe uinput") != 0)
 	{
-		fprintf(stderr, OUT_PRE "Warning: modprobe uinput failed. Make sure the uinput "
+		daemon_log(LOG_WARNING, OUT_PRE "Modprobe uinput failed. Make sure the uinput "
 				"module is loaded before running btnx. If it's already running,"
-				" no problem.\n");
+				" no problem.");
 	}
 	else
-		fprintf(stderr, OUT_PRE "uinput modprobed successfully.\n");
+		daemon_log(LOG_INFO, OUT_PRE "uinput modprobed successfully.");
 	
 	bevs = config_parse(config_name);
 	
 	if (bevs == NULL)
 	{
-		fprintf(stderr, OUT_PRE "Error: configuration file error.\n");
+		daemon_log(LOG_ERR, OUT_PRE "Configuration file error.");
 		exit(BTNX_ERROR_NO_CONFIG);
 	}
 	
@@ -539,8 +439,8 @@ int main(int argc, char *argv[])
 								TYPE_MOUSE);
 	if (fd_ev_btn < 0)
 	{
-		fprintf(stderr, OUT_PRE "Error opening button event file descriptor: %s\n", 
-				strerror(errno));
+		daemon_log(LOG_ERR, OUT_PRE "Error opening button event file descriptor: %s", 
+		           strerror(errno));
 		exit(BTNX_ERROR_OPEN_HANDLER);
 	}
 	fd_ev_key = find_handler(	O_RDONLY, 
@@ -549,23 +449,45 @@ int main(int argc, char *argv[])
 								TYPE_KBD);
 	uinput_init("btnx");
 	
-	if (fd_ev_btn > fd_ev_key)
-		max_fd = fd_ev_btn;
-	else
-		max_fd = fd_ev_key;
-	
 	revoco_launch();
 	
-	fprintf(stderr, OUT_PRE "No startup errors\n");
-	
-	if (log)
-	{
-		fclose(stderr);
-		stderr = fdopen(STDERR_FILENO, "w");
-	}
+	daemon_log(LOG_INFO, OUT_PRE "No startup errors.");
 		
-	if (bg) daemon(0,0);
-	pid_file(0, 1);
+	if (bg) {
+		if ((pid = daemon_fork()) < 0) {
+			daemon_log(LOG_ERR, OUT_PRE "Daemon fork failed. Quitting.");
+			exit(BTNX_ERROR_FATAL);
+		}
+		else if (pid > 0) {
+			daemon_log(LOG_DEBUG, OUT_PRE "Parent done.");
+			exit(BTNX_EXIT_NORMAL);
+		}
+	}
+	
+	if (daemon_pid_file_create() < 0) {
+		daemon_log(LOG_ERR, OUT_PRE "Could not create PID file: %s", strerror(errno));
+		ret = BTNX_ERROR_CREATE_PID_FILE;
+		goto finish_daemon;
+	}
+	if (daemon_signal_init(SIGINT, SIGTERM, SIGQUIT, 0) < 0) {
+		daemon_log(LOG_ERR, OUT_PRE "Could not register signal handlers: %s.", strerror(errno));
+		ret = BTNX_ERROR_INIT_SIGNALS;
+		goto finish_daemon;
+	}
+	
+	fd_daemon = daemon_signal_fd();
+	if (fd_ev_btn > fd_ev_key) {
+		if (fd_ev_btn > fd_daemon)
+			max_fd = fd_ev_btn;
+		else
+			max_fd = fd_daemon;
+	}
+	else {
+		if (fd_ev_key > fd_daemon)
+			max_fd = fd_ev_key;
+		else
+			max_fd = fd_daemon;
+	}
 	
 	gettimeofday(&exec_time, NULL);
 	
@@ -575,23 +497,34 @@ int main(int argc, char *argv[])
 		FD_SET(fd_ev_btn, &fds);
 		if (fd_ev_key != -1)
 			FD_SET(fd_ev_key, &fds);
+		FD_SET(fd_daemon, &fds);
 	
 		ready = select(max_fd+1, &fds, NULL, NULL, NULL);	
 		
 		if (ready == -1)
-			perror(OUT_PRE "select() error");
+			daemon_log(LOG_WARNING, OUT_PRE "select() error: %s", strerror(errno));
 		else if (ready == 0)
 			continue;
 		else
 		{
 			if (FD_ISSET(fd_ev_btn, &fds))
 				hexdump = btnx_event_read(fd_ev_btn);
-			else if (fd_ev_key != 0)
-			{
-				if (FD_ISSET(fd_ev_key, &fds))
-					hexdump = btnx_event_read(fd_ev_key);
-				else
-					continue;
+			else if (fd_ev_key != 0 && FD_ISSET(fd_ev_key, &fds))
+				hexdump = btnx_event_read(fd_ev_key);
+			else if (FD_ISSET(fd_daemon, &fds)) {
+				int sig;
+				if ((sig = daemon_signal_next()) <= 0) {
+					daemon_log(LOG_ERR, OUT_PRE "daemon_signal_next() failed.");
+					goto finish_daemon;
+				}
+				
+				switch (sig) {
+				case SIGINT:
+				case SIGQUIT:
+				case SIGTERM:
+					daemon_log(LOG_INFO, OUT_PRE "Received quit signal.");
+					goto finish_daemon;
+				}
 			}
 			else
 				continue;
@@ -640,5 +573,14 @@ int main(int argc, char *argv[])
 		waitpid(-1, NULL, WNOHANG);	
 	}
 	
-	return 0;
+finish_daemon:
+	daemon_log(LOG_INFO, OUT_PRE "Exiting...");
+	uinput_close();
+	close(fd_ev_btn);
+	if (fd_ev_key != -1)
+		close(fd_ev_key);
+	daemon_signal_done();
+	daemon_pid_file_remove();
+	
+	return ret;
 }

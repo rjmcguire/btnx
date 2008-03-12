@@ -17,6 +17,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <unistd.h>
+#include <libdaemon/dlog.h>
 
 #define CONFIG_MOUSE_BEGIN		"Mouse"
 #define CONFIG_MOUSE_END		"EndMouse"
@@ -154,13 +155,13 @@ static char *config_get_names(char *config_name)
 	
 	if (loops == 0)
 	{
-		fprintf(stderr, OUT_PRE "Warning: config manager file is empty.\n");
+		daemon_log(LOG_WARNING, OUT_PRE "Warning: config manager file is empty.");
 		return NULL;
 	}
 	if (loops > 0 && found == 0 && name_first[0] != '\0')
 	{
-		fprintf(stderr, OUT_PRE "Warning: attempted to open an unexisting "
-				"configuration name: %s. Using the default one.\n", config_name);
+		daemon_log(LOG_WARNING, OUT_PRE "Warning: attempted to open an unexisting "
+				"configuration name: %s. Using the default one.", config_name);
 		if (config_name != NULL) free(config_name);
 		fclose(fp);
 		return (config_name = config_get_names(NULL));
@@ -179,8 +180,6 @@ static char *config_get_names(char *config_name)
 	have_prev_config = prev;
 	have_next_config = next;
 	
-	//printf("prev: %s\nconfig: %s\nnext: %s\n", prev_config, config_name, next_config);
-	
 	fclose(fp);
 	
 	return config_name;
@@ -197,8 +196,8 @@ static int config_get_keycode(const char *value)
 	/* Length is longer than any defined event */
 	if (strlen(value) > 20)
 	{
-		fprintf(stderr, OUT_PRE "Warning: possibly malformed keycode or "
-				"modifier value. Ignoring.\n");
+		daemon_log(LOG_WARNING, OUT_PRE "Warning: possibly malformed keycode or "
+				"modifier value. Ignoring.");
 		return 0;
 	}
 	
@@ -247,8 +246,8 @@ static void config_add_mod(btnx_event *e, int mod)
 		}
 	}
 	
-	fprintf(stderr, OUT_PRE "Warning: attempting to add more mods than allowed "
-			"by MAX_MODS\n");
+	daemon_log(LOG_WARNING, OUT_PRE "Warning: attempting to add more mods than allowed "
+			"by MAX_MODS");
 }
 
 /* Split an execute command string into a string vector of its executable path
@@ -304,10 +303,10 @@ static char **config_split_command(char *cmd)
 	
 	if (i < 1)
 	{
-		fprintf(stderr, OUT_PRE "Error: invalid arguments for command execution configuration option.\n");
-		fprintf(stderr, OUT_PRE "You must specify at least one item: /path/to/executable_name\n");
-		fprintf(stderr, OUT_PRE "Example: /usr/bin/gedit\n");
-		fprintf(stderr, OUT_PRE "Then append optional arguments: /usr/bin/gedit --new-window /etc/btnx/btnx_config\n");
+		daemon_log(LOG_WARNING, OUT_PRE "Error: invalid arguments for command execution configuration option.");
+		daemon_log(LOG_WARNING, OUT_PRE "You must specify at least one item: /path/to/executable_name");
+		daemon_log(LOG_WARNING, OUT_PRE "Example: /usr/bin/gedit");
+		daemon_log(LOG_WARNING, OUT_PRE "Then append optional arguments: /usr/bin/gedit --new-window /etc/btnx/btnx_config");
 		
 		return NULL;
 	}
@@ -322,7 +321,7 @@ static char *config_set_command(btnx_event *e, char *value)
 	
 	if (e->command == NULL)
 	{
-		fprintf(stderr, OUT_PRE "Error: could not allocate command: %s\n", strerror(errno));
+		daemon_log(LOG_WARNING, OUT_PRE "Error: could not allocate command: %s", strerror(errno));
 		return NULL;
 	}
 	e->keycode = COMMAND_EXECUTE;
@@ -331,7 +330,7 @@ static char *config_set_command(btnx_event *e, char *value)
 	e->args = config_split_command(e->command);
 	if (e->args == NULL)
 	{
-		fprintf(stderr, OUT_PRE "Fatal error in config_split_command. Exiting...\n");
+		daemon_log(LOG_WARNING, OUT_PRE "Fatal error in config_split_command. Exiting...");
 		exit(BTNX_ERROR_BAD_CONFIG);
 	}
 	
@@ -365,10 +364,6 @@ static const char *config_add_value(btnx_event *e,
 									const char *option, 
 									char *value)
 {
-#ifdef DEBUG	
-	printf(OUT_PRE "Loaded config value: %s\n",option);
-#endif
-	
 	/* Button values */
 	if (type == BLOCK_BUTTON)
 	{
@@ -501,11 +496,11 @@ btnx_event **config_parse(char *config_name)
 	else
 		sprintf(buffer,"%s/%s_%s", CONFIG_PATH, CONFIG_NAME, config_name);
 	
-	printf(OUT_PRE "Opening config file: %s\n", buffer);
+	daemon_log(LOG_WARNING, OUT_PRE "Opening config file: %s", buffer);
 	
 	if (!(fp = fopen(buffer,"r")))
 	{
-		perror(OUT_PRE "Could not read the config file");
+		daemon_log(LOG_WARNING, OUT_PRE "Could not read the config file: %s", strerror(errno));
 		return NULL;
 	}
 	
@@ -541,7 +536,7 @@ btnx_event **config_parse(char *config_name)
 				strcpy(value, loc_beg);
 				
 				if (!config_add_value(bevs[i], block_type, option, value))
-					fprintf(stderr, OUT_PRE "Warning: parse error: %s = %s\n", option, value);
+					daemon_log(LOG_WARNING, OUT_PRE "Warning: parse error: %s = %s", option, value);
 				
 				memset(value, '\0', CONFIG_PARSE_VALUE_SIZE * sizeof(char));
 				memset(option, '\0', CONFIG_PARSE_OPTION_SIZE * sizeof(char));
@@ -563,7 +558,7 @@ btnx_event **config_parse(char *config_name)
 				{
 					if (block_end == 0)
 					{
-						fprintf(stderr, OUT_PRE "Warning: config file parse error\n");
+						daemon_log(LOG_WARNING, OUT_PRE "Warning: config file parse error");
 						continue;
 					}
 					block_begin = 1;
@@ -578,13 +573,15 @@ btnx_event **config_parse(char *config_name)
 					bevs[i]->last.tv_usec = 0;
 					bevs[i]->switch_type = CONFIG_SWITCH_NONE;
 					bevs[i]->switch_name = NULL;
+					bevs[i]->command = NULL;
+					bevs[i]->args = NULL;
 					block_type = BLOCK_BUTTON;
 				}
 				else if (strcasecmp(loc_beg, CONFIG_BUTTON_END) == 0)
 				{
 					if (block_begin == 0)
 					{
-						fprintf(stderr, OUT_PRE "Warning: config file parse error\n");
+						daemon_log(LOG_WARNING, OUT_PRE "Warning: config file parse error");
 						continue;
 					}
 					block_end = 1;
@@ -594,7 +591,7 @@ btnx_event **config_parse(char *config_name)
 				{
 					if (block_end == 0)
 					{
-						fprintf(stderr, OUT_PRE "Warning: config file parse error\n");
+						daemon_log(LOG_WARNING, OUT_PRE "Warning: config file parse error");
 						continue;
 					}
 					block_begin = 1;
@@ -604,7 +601,7 @@ btnx_event **config_parse(char *config_name)
 				{
 					if (block_begin == 0)
 					{
-						fprintf(stderr, OUT_PRE "Warning: config file parse error\n");
+						daemon_log(LOG_WARNING, OUT_PRE "Warning: config file parse error");
 						continue;
 					}
 					block_end = 1;

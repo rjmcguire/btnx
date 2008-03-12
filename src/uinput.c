@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <libdaemon/dlog.h>
 
 #include "uinput.h"
 #include "btnx.h"
@@ -93,6 +94,13 @@ int uinput_init(const char *dev_name)
   return 0;
 }
 
+void uinput_close(void) {
+	if (uinput_mouse_fd > -1)
+		close(uinput_mouse_fd);
+	if (uinput_kbd_fd > -1)
+		close(uinput_kbd_fd);
+}
+
 /* Send a key combo event, either press or release */
 void uinput_key_press(struct btnx_event *bev)
 {
@@ -103,7 +111,7 @@ void uinput_key_press(struct btnx_event *bev)
 	
 	if (uinput_mouse_fd < 0 || uinput_kbd_fd < 0)
 	{
-		fprintf(stderr, OUT_PRE "Warning: uinput_fd not valid\n");
+		daemon_log(LOG_WARNING, OUT_PRE "Warning: uinput_fd not valid");
 		return;
 	}
 	
