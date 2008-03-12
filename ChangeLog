@@ -1,16 +1,16 @@
 btnx ChangeLog
 
-2008-03-12  v.0.4.8
-    * btnx requires libdaemon >= v.0.10.
-    * Daemon functionality (PID file, output and logging, signals) handled more
-    gracefully by libdaemon.
-    * Refinement of ./configure script. Arguments:
-    init_scripts_path = control init scripts path argument.
-    config_path = path where btnx configuration files are stored.
-    init_tool = set to no to disable init script registration. Otherwise,
-    autodetects update-rc.d, chkconfig, and rc-update.
-    output_syslog = set to yes to make btnx redirect output to syslog when
-    started by the init script.
+2008-03-12	v.0.4.8
+	* btnx requires libdaemon >= v.0.10.
+	* Daemon functionality (PID file, output and logging, signals) handled more
+	gracefully by libdaemon.
+	* Refinement of ./configure script. Arguments:
+	init_scripts_path = control init scripts path argument.
+	config_path = path where btnx configuration files are stored.
+	init_tool = set to no to disable init script registration. Otherwise,
+	autodetects update-rc.d, chkconfig, and rc-update.
+	output_syslog = set to yes to make btnx redirect output to syslog when
+	started by the init script.
 
 2008-03-06	v.0.4.7
 	* btnx has been converted to use GNU autotools. Use ./configure before
