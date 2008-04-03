@@ -36,6 +36,7 @@ enum
 /* Static variables */
 static char next_config[CONFIG_NAME_MAX_SIZE];	/* Name of next config */
 static char prev_config[CONFIG_NAME_MAX_SIZE];	/* Name of previous config */
+static char first_config[CONFIG_NAME_MAX_SIZE] = ""; /* Name of current config */
 static int have_next_config=0;					/* Is next config defined? */
 static int have_prev_config=0;					/* Is previous config defined? */
 
@@ -480,7 +481,7 @@ static const char *config_add_value(btnx_event *e,
 
 
 /* Parse a configuration file and return the btnx_event structures */
-btnx_event **config_parse(char *config_name)
+btnx_event **config_parse(char **config_name)
 {
 	FILE *fp;
 	char buffer[CONFIG_PARSE_BUFFER_SIZE];
@@ -491,10 +492,19 @@ btnx_event **config_parse(char *config_name)
 	btnx_event **bevs;
 	int i=-1, block_type=BLOCK_NONE;
 	
-	if ((config_name = config_get_names(config_name)) == NULL)
+	if ((*config_name = config_get_names(*config_name)) == NULL)
 		sprintf(buffer,"%s/%s", CONFIG_PATH, CONFIG_NAME);
 	else
-		sprintf(buffer,"%s/%s_%s", CONFIG_PATH, CONFIG_NAME, config_name);
+		sprintf(buffer,"%s/%s_%s", CONFIG_PATH, CONFIG_NAME, *config_name);
+	
+	/* When looping through configurations, stop when reaching the original
+	 * configuration. */
+	if (first_config[0] == '\0')
+		strcpy(first_config, *config_name);
+	else if (strcmp(first_config, *config_name) == 0) {
+		daemon_log(LOG_WARNING, OUT_PRE "Looped through all configurations. Stopping.");
+		return NULL;
+	}
 	
 	daemon_log(LOG_WARNING, OUT_PRE "Opening config file: %s", buffer);
 	
@@ -612,9 +622,6 @@ btnx_event **config_parse(char *config_name)
 	}
 	
 	fclose(fp);
-	
-	if (config_name != NULL)
-		free(config_name);
 	
 	return bevs;
 }

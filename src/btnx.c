@@ -112,7 +112,7 @@ int open_handler(char *name, int flags)
 		sprintf(loc_buffer, "%s/%s", loc, name);
 		if ((fd = open(loc_buffer, flags)) >= 0)
 		{
-			daemon_log(LOG_DEBUG, OUT_PRE "Opened handler: %s", loc_buffer);
+			//daemon_log(LOG_DEBUG, OUT_PRE "Opened handler: %s", loc_buffer);
 			return fd;
 		}
 	}
@@ -376,7 +376,7 @@ int main(int argc, char *argv[])
 	fd_set fds;
 	hexdump_t hexdump = {.rawcode=0, .pressed=0};
 	int max_fd, ready;
-	btnx_event **bevs;
+	btnx_event **bevs = NULL;
 	int bev_index;
 	int suppress_release=1;
 	int bg=0, ret=BTNX_EXIT_NORMAL;
@@ -416,24 +416,34 @@ int main(int argc, char *argv[])
 	else
 		daemon_log(LOG_INFO, OUT_PRE "uinput modprobed successfully.");
 	
-	bevs = config_parse(config_name);
-	
-	if (bevs == NULL)
-	{
-		daemon_log(LOG_ERR, OUT_PRE "Configuration file error.");
-		exit(BTNX_ERROR_NO_CONFIG);
+	/* Loop through the configurations until no more are left or a configured
+	 * mouse is detected. */
+	while (bevs == NULL) {
+		bevs = config_parse(&config_name);		
+		if (bevs == NULL) {
+			daemon_log(LOG_ERR, OUT_PRE "Configuration file error.");
+			exit(BTNX_ERROR_NO_CONFIG);
+		}
+		
+		fd_ev_btn = find_handler(	O_RDONLY,
+									device_get_vendor_id(),
+									device_get_product_id(),
+									TYPE_MOUSE);
+		if (fd_ev_btn < 0) {
+			daemon_log(LOG_ERR, OUT_PRE "No configured mouse detected: %s", 
+			           strerror(errno));
+			free(bevs);
+			bevs = NULL;
+			if (config_get_next() != NULL && config_name != NULL) {
+				free(config_name);
+				config_name = malloc(sizeof(strlen(config_get_next())) + 1);
+				strcpy(config_name, config_get_next());
+			}
+			else
+				exit(BTNX_ERROR_OPEN_HANDLER);
+		}
 	}
 	
-	fd_ev_btn = find_handler(	O_RDONLY,
-								device_get_vendor_id(),
-								device_get_product_id(),
-								TYPE_MOUSE);
-	if (fd_ev_btn < 0)
-	{
-		daemon_log(LOG_ERR, OUT_PRE "Error opening button event file descriptor: %s", 
-		           strerror(errno));
-		exit(BTNX_ERROR_OPEN_HANDLER);
-	}
 	fd_ev_key = find_handler(	O_RDONLY, 
 								device_get_vendor_id(), 
 								device_get_product_id(), 

@@ -3,6 +3,12 @@ btnx ChangeLog
 2008-04-03	v.0.4.9
 	* Fixes combination release issue. Modifiers were released before the main
 	key which caused the system to register extra main keys during release.
+	* Incorporates configuration looping: btnx tries all configuration files
+	until it detects a configured mouse. This means you can have multiple
+	configurations with different mice and btnx will start with the one
+	plugged in (good for roaming users). If many mice are plugged in, btnx
+	uses the highest priority one.
+	Fixes bug #200050: https://bugs.launchpad.net/btnx/+bug/200050
 
 2008-03-12	v.0.4.8
 	* btnx requires libdaemon >= v.0.10.

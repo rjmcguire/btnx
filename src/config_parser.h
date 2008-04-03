@@ -27,6 +27,6 @@ const char *config_get_next(void);
 const char *config_get_prev(void);
 
 /* Parse the configuration file */
-btnx_event **config_parse(char *config_name);
+btnx_event **config_parse(char **config_name);
 
 #endif /*CONFIG_PARSER_H_*/
