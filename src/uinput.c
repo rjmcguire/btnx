@@ -101,26 +101,10 @@ void uinput_close(void) {
 		close(uinput_kbd_fd);
 }
 
-/* Send a key combo event, either press or release */
-void uinput_key_press(struct btnx_event *bev)
-{
-	struct input_event event;
-	int fd;
+/* Send any necessary modifier keys */
+static void uinput_send_mods(struct btnx_event *bev, struct input_event event) {
 	int i;
 	int mod_pressed=0;
-	
-	if (uinput_mouse_fd < 0 || uinput_kbd_fd < 0)
-	{
-		daemon_log(LOG_WARNING, OUT_PRE "Warning: uinput_fd not valid");
-		return;
-	}
-	
-	if ((bev->keycode <= KEY_UNKNOWN || bev->keycode >= KEY_OK) && bev->keycode < BTNX_EXTRA_EVENTS)
-		fd = uinput_kbd_fd;
-	else
-		fd = uinput_mouse_fd;
-		
-	gettimeofday(&event.time, NULL);
 	
 	for (i=0; i<MAX_MODS; i++)
 	{
@@ -140,9 +124,12 @@ void uinput_key_press(struct btnx_event *bev)
   		mod_pressed = 1;
 	}
 	
-	if (mod_pressed == 1)
-	    usleep(200);    // Needs a little delay for mouse + modifier combo
-	
+	if (mod_pressed)
+	    usleep(200);    /* Needs a little delay for mouse + modifier combo */
+}
+
+/* Send the main key or button press/release */
+static void uinput_send_key(struct btnx_event *bev, struct input_event event, int fd) {
 	if (bev->keycode > BTNX_EXTRA_EVENTS)
 	{
 		event.type = EV_REL;
@@ -168,6 +155,37 @@ void uinput_key_press(struct btnx_event *bev)
   	event.code = SYN_REPORT;
   	event.value = 0;
   	write(fd, &event, sizeof(event));
+}
+
+/* Send a key combo event, either press or release */
+void uinput_key_press(struct btnx_event *bev)
+{
+	struct input_event event;
+	int fd;
+
+	if (uinput_mouse_fd < 0 || uinput_kbd_fd < 0)
+	{
+		daemon_log(LOG_WARNING, OUT_PRE "Warning: uinput_fd not valid");
+		return;
+	}
+	
+	if ((bev->keycode <= KEY_UNKNOWN || bev->keycode >= KEY_OK) && bev->keycode < BTNX_EXTRA_EVENTS)
+		fd = uinput_kbd_fd;
+	else
+		fd = uinput_mouse_fd;
+		
+	gettimeofday(&event.time, NULL);
+	
+	/* If button is pressed, send modifiers first and then the main key.
+	 * If button is released, release main key first and then the modifiers. */
+	if (bev->pressed) {
+		uinput_send_mods(bev, event);
+		uinput_send_key(bev, event, fd);
+	}
+	else {
+		uinput_send_key(bev, event, fd);
+		uinput_send_mods(bev, event);
+	}
 }
 
 

@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT(btnx, 0.4.8, oasalone@gmail.com)
+AC_INIT(btnx, 0.4.9, oasalone@gmail.com)
 AC_CONFIG_AUX_DIR([config])
 AC_CONFIG_SRCDIR([src/btnx.h])
 AC_CONFIG_HEADER([config.h])

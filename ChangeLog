@@ -1,5 +1,9 @@
 btnx ChangeLog
 
+2008-04-03	v.0.4.9
+	* Fixes combination release issue. Modifiers were released before the main
+	key which caused the system to register extra main keys during release.
+
 2008-03-12	v.0.4.8
 	* btnx requires libdaemon >= v.0.10.
 	* Daemon functionality (PID file, output and logging, signals) handled more
