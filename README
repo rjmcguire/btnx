@@ -26,6 +26,7 @@ or by running
 $ sudo /etc/init.d/btnx restart
 
 For questions|problems|comments go to the btnx thread at the Ubuntu
-forums:
+forums or check the manual:
 
+http://www.ollisalonen.com/btnx/man/index.html
 http://ubuntuforums.org/showthread.php?t=455656

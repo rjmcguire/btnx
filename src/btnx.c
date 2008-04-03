@@ -63,18 +63,7 @@
 #define TYPE_MOUSE				0
 #define TYPE_KBD				1
 
-/*
- * The following macros are from mouseemu, to help distinguish
- * between keyboard and mouse handlers.
- */
-#define BITS_PER_LONG (sizeof(long) * 8)
-#ifndef NBITS
-#define NBITS(x) ((((x)-1)/BITS_PER_LONG)+1)
-#endif
-#define OFF(x) ((x)%BITS_PER_LONG)
-#define LONG(x) ((x)/BITS_PER_LONG)
-#define test_bit(bit, array) ((array[LONG(bit)] >> OFF(bit)) & 1)
-/* End mouseemu macros */
+#define test_bit(bit, array) (array[bit/8] & (1<<(bit%8)))
 
 /* Static variables */
 static char *g_exec_path=NULL; 		/* Path of this executable */
@@ -138,9 +127,11 @@ static int find_handler(int flags, int vendor, int product, int type)
 {
 	int i, fd;
 	unsigned short id[6];
-	unsigned long bit[NBITS(EV_MAX)];
+	unsigned char bit[EV_MAX/8+1];
 	char name[16];
 	
+	/* Satisfy valgrind with memset */
+	memset(bit, 0, sizeof(bit));
 	for (i=0; i<NUM_EVENT_HANDLERS; i++)
 	{
 		sprintf(name, "event%d", i);
@@ -149,7 +140,7 @@ static int find_handler(int flags, int vendor, int product, int type)
 		ioctl(fd, EVIOCGID, id); /* Extract IDs */
 		if (vendor == id[ID_VENDOR] && product == id[ID_PRODUCT])
 		{
-			ioctl(fd, EVIOCGBIT(0, EV_MAX), bit);
+			ioctl(fd, EVIOCGBIT(0, sizeof(bit)), bit);
 			if (((test_bit(EV_KEY, bit) && test_bit(EV_ABS, bit)) && type == TYPE_KBD))
 			{
 				return fd; /* A keyboard handler found with correct IDs */
