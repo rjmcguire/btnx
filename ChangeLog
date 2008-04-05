@@ -1,6 +1,6 @@
 btnx ChangeLog
 
-2008-04-03	v.0.4.9
+2008-04-05	v.0.4.9
 	* Fixes combination release issue. Modifiers were released before the main
 	key which caused the system to register extra main keys during release.
 	* Incorporates configuration looping: btnx tries all configuration files
