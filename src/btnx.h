@@ -13,6 +13,7 @@
 #define MAX_MODS		3
 #define MAX_RAWCODES	10
 #define HEXDUMP_SIZE	8
+#define NULL_FD			-1
 
 /* A string prepended to output from this program. Makes messages and errors
  * clearer. */

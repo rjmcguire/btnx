@@ -78,7 +78,7 @@ const char handler_locations[][15] = {
 
 /* Static function declarations */
 static const char *get_handler_location(int index);
-static int find_handler(int flags, int vendor, int product, int type);
+static int find_handler(struct device_fds_t *dev_fds, int flags, int vendor, int product);
 static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed);
 static hexdump_t btnx_event_read(int fd);
 static void command_execute(btnx_event *bev);
@@ -86,7 +86,6 @@ static void config_switch(btnx_event **bevs, int index);
 static void send_extra_event(btnx_event **bevs, int index);
 static int check_delay(btnx_event *bev);
 static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **config_file);
-
 
 /* To simplify the open_handler loop. Can't think of another reason why I
  * coded this */
@@ -112,37 +111,31 @@ int open_handler(char *name, int flags) {
 		}
 	}
 	
-	return -1;
+	return NULL_FD;
 }
 
 /* Tries to find an input handler that has a certain vendor and product
  * ID associated with it. type determines whether it is a mouse or keyboard
  * input handler that is being searched. */
-static int find_handler(int flags, int vendor, int product, int type)
+static int find_handler(struct device_fds_t *dev_fds, int flags, int vendor, int product)
 {
 	int i, fd;
 	unsigned short id[6];
-	unsigned char bit[EV_MAX/8+1];
 	char name[16];
 	
-	/* Satisfy valgrind with memset */
-	memset(bit, 0, sizeof(bit));
 	for (i=0; i<NUM_EVENT_HANDLERS; i++) {
 		sprintf(name, "event%d", i);
 		if ((fd = open_handler(name, flags)) < 0)
 			continue;
 		ioctl(fd, EVIOCGID, id); /* Extract IDs */
 		if (vendor == id[ID_VENDOR] && product == id[ID_PRODUCT]) {
-			ioctl(fd, EVIOCGBIT(0, sizeof(bit)), bit);
-			if (((test_bit(EV_KEY, bit) && test_bit(EV_ABS, bit)) && type == TYPE_KBD))	{
-				return fd; /* A keyboard handler found with correct IDs */
-			}
-			else if ((test_bit(EV_REL, bit)) && type == TYPE_MOUSE)
-				return fd; /* A mouse handler found with correct IDs */
+			device_fds_add_fd(dev_fds, fd);
 		}
-		close(fd);
+		else
+			close(fd);
 	}
-	return -1; /* No such handler found */
+	device_fds_set_max_fd(dev_fds);
+	return dev_fds->count; /* No such handler found */
 }
 
 /* Find the btnx_event structure that is associated with a captured rawcode
@@ -342,10 +335,11 @@ static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **con
 }
 
 int main(int argc, char *argv[]) {
-	int fd_ev_btn=0, fd_ev_key=-1, fd_daemon=0;
+	int fd_daemon=0;
 	fd_set fds;
+	struct device_fds_t dev_fds;
 	hexdump_t hexdump = {.rawcode=0, .pressed=0};
-	int max_fd, ready;
+	int max_fd, ready, set_fd;
 	btnx_event **bevs = NULL;
 	int bev_index;
 	int suppress_release=1;
@@ -386,6 +380,7 @@ int main(int argc, char *argv[]) {
 	
 	/* Loop through the configurations until no more are left or a configured
 	 * mouse is detected. */
+	device_fds_init(&dev_fds);
 	while (bevs == NULL) {
 		bevs = config_parse(&config_name);		
 		if (bevs == NULL) {
@@ -393,12 +388,9 @@ int main(int argc, char *argv[]) {
 			exit(BTNX_ERROR_NO_CONFIG);
 		}
 		
-		fd_ev_btn = find_handler(	O_RDONLY,
-									device_get_vendor_id(),
-									device_get_product_id(),
-									TYPE_MOUSE);
-		if (fd_ev_btn < 0) {
-			daemon_log(LOG_ERR, OUT_PRE "No configured mouse detected: %s", 
+		if (find_handler(&dev_fds, O_RDONLY, device_get_vendor_id(), 
+		                 device_get_product_id()) == 0) {
+			daemon_log(LOG_ERR, OUT_PRE "No configured mouse handler detected: %s", 
 			           strerror(errno));
 			free(bevs);
 			bevs = NULL;
@@ -412,10 +404,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
-	fd_ev_key = find_handler(	O_RDONLY, 
-								device_get_vendor_id(), 
-								device_get_product_id(), 
-								TYPE_KBD);
 	uinput_init("btnx");
 	
 	revoco_launch();
@@ -445,26 +433,16 @@ int main(int argc, char *argv[]) {
 	}
 	
 	fd_daemon = daemon_signal_fd();
-	if (fd_ev_btn > fd_ev_key) {
-		if (fd_ev_btn > fd_daemon)
-			max_fd = fd_ev_btn;
-		else
-			max_fd = fd_daemon;
-	}
-	else {
-		if (fd_ev_key > fd_daemon)
-			max_fd = fd_ev_key;
-		else
-			max_fd = fd_daemon;
-	}
+	if (fd_daemon > dev_fds.max_fd)
+		max_fd = fd_daemon;
+	else
+		max_fd = dev_fds.max_fd;
 	
 	gettimeofday(&exec_time, NULL);
 	
 	for (;;) {
 		FD_ZERO(&fds);
-		FD_SET(fd_ev_btn, &fds);
-		if (fd_ev_key != -1)
-			FD_SET(fd_ev_key, &fds);
+		device_fds_fill_fds(&dev_fds, &fds);
 		FD_SET(fd_daemon, &fds);
 	
 		ready = select(max_fd+1, &fds, NULL, NULL, NULL);	
@@ -474,10 +452,9 @@ int main(int argc, char *argv[]) {
 		else if (ready == 0)
 			continue;
 		else {
-			if (FD_ISSET(fd_ev_btn, &fds))
-				hexdump = btnx_event_read(fd_ev_btn);
-			else if (fd_ev_key != 0 && FD_ISSET(fd_ev_key, &fds))
-				hexdump = btnx_event_read(fd_ev_key);
+			set_fd = device_fds_find_set_fd(&dev_fds, &fds);
+			if (set_fd != NULL_FD)
+				hexdump = btnx_event_read(set_fd);
 			else if (FD_ISSET(fd_daemon, &fds)) {
 				int sig;
 				if ((sig = daemon_signal_next()) <= 0) {
@@ -539,9 +516,7 @@ int main(int argc, char *argv[]) {
 finish_daemon:
 	daemon_log(LOG_INFO, OUT_PRE "Exiting...");
 	uinput_close();
-	close(fd_ev_btn);
-	if (fd_ev_key != -1)
-		close(fd_ev_key);
+	device_fds_close(&dev_fds);
 	daemon_signal_done();
 	daemon_pid_file_remove();
 	

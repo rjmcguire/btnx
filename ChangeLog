@@ -9,6 +9,10 @@ btnx ChangeLog
 	plugged in (good for roaming users). If many mice are plugged in, btnx
 	uses the highest priority one.
 	Fixes bug #200050: https://bugs.launchpad.net/btnx/+bug/200050
+	* Better structure for listening to multiple device handlers.
+	* Allows use of devices with only absolute x,y axis movement. Previously
+	the mouse was detected according to only relative x,y setting values. Allows
+	the use of touchpads.
 
 2008-03-12	v.0.4.8
 	* btnx requires libdaemon >= v.0.10.
