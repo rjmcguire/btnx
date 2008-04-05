@@ -70,8 +70,7 @@ static char *g_exec_path=NULL; 		/* Path of this executable */
 static struct timeval exec_time; 	/* time when daemon was executed. */
 
 /* Possible paths of event handlers */
-const char handler_locations[][15] =
-{
+const char handler_locations[][15] = {
 	{"/dev"},
 	{"/dev/input"},
 	{"/dev/misc"}
@@ -91,8 +90,7 @@ static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **con
 
 /* To simplify the open_handler loop. Can't think of another reason why I
  * coded this */
-static const char *get_handler_location(int index)
-{
+static const char *get_handler_location(int index) {
 	if (index < 0 || index > NUM_HANDLER_LOCATIONS - 1)
 		return NULL;
 	
@@ -101,17 +99,14 @@ static const char *get_handler_location(int index)
 
 
 /* Used to find a certain named event handler in several paths */
-int open_handler(char *name, int flags)
-{
+int open_handler(char *name, int flags) {
 	const char *loc;
 	int x=0, fd;
 	char loc_buffer[128];
 	
-	while ((loc = get_handler_location(x++)) != NULL)
-	{
+	while ((loc = get_handler_location(x++)) != NULL) {
 		sprintf(loc_buffer, "%s/%s", loc, name);
-		if ((fd = open(loc_buffer, flags)) >= 0)
-		{
+		if ((fd = open(loc_buffer, flags)) >= 0) {
 			//daemon_log(LOG_DEBUG, OUT_PRE "Opened handler: %s", loc_buffer);
 			return fd;
 		}
@@ -132,17 +127,14 @@ static int find_handler(int flags, int vendor, int product, int type)
 	
 	/* Satisfy valgrind with memset */
 	memset(bit, 0, sizeof(bit));
-	for (i=0; i<NUM_EVENT_HANDLERS; i++)
-	{
+	for (i=0; i<NUM_EVENT_HANDLERS; i++) {
 		sprintf(name, "event%d", i);
 		if ((fd = open_handler(name, flags)) < 0)
 			continue;
 		ioctl(fd, EVIOCGID, id); /* Extract IDs */
-		if (vendor == id[ID_VENDOR] && product == id[ID_PRODUCT])
-		{
+		if (vendor == id[ID_VENDOR] && product == id[ID_PRODUCT]) {
 			ioctl(fd, EVIOCGBIT(0, sizeof(bit)), bit);
-			if (((test_bit(EV_KEY, bit) && test_bit(EV_ABS, bit)) && type == TYPE_KBD))
-			{
+			if (((test_bit(EV_KEY, bit) && test_bit(EV_ABS, bit)) && type == TYPE_KBD))	{
 				return fd; /* A keyboard handler found with correct IDs */
 			}
 			else if ((test_bit(EV_REL, bit)) && type == TYPE_MOUSE)
@@ -159,10 +151,8 @@ static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 {
 	int i=0;
 	
-	while (bevs[i] != 0)
-	{
-		if (bevs[i]->rawcode == rawcode)
-		{
+	while (bevs[i] != 0) {
+		if (bevs[i]->rawcode == rawcode) {
 			if (bevs[i]->enabled == 0)
 				return -1; /* associated rawcode found, but event is disabled */
 			bevs[i]->pressed = pressed;
@@ -175,8 +165,7 @@ static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 }
 
 /* Extract the rawcode(s) of an input event. */
-static hexdump_t btnx_event_read(int fd)
-{
+static hexdump_t btnx_event_read(int fd) {
 	hexdump_t hexdump = {.rawcode = 0, .pressed = 0};
 	int ret;
 	struct input_event ev;
@@ -197,19 +186,16 @@ static hexdump_t btnx_event_read(int fd)
 }
 
 /* Execute a shell script or binary file */
-static void command_execute(btnx_event *bev)
-{
+static void command_execute(btnx_event *bev) {
 	int pid;
 	
-	if (!(pid = fork()))
-	{
+	if (!(pid = fork())) {
 		/* Change this to use su to set environments correctly for certain
 		 * programs */
 		setuid(bev->uid);
 		execv(bev->args[0], bev->args);
 	}
-	else if (pid < 0)
-	{
+	else if (pid < 0) {
 		daemon_log(LOG_WARNING, OUT_PRE "Error: could not fork: %s", strerror(errno));
 		return;
 	}
@@ -217,8 +203,7 @@ static void command_execute(btnx_event *bev)
 }
 
 /* Perform a configuration switch */
-static void config_switch(btnx_event **bev, int index)
-{
+static void config_switch(btnx_event **bev, int index) {
 	const char *name=NULL;
 	struct timeval now;
 	
@@ -232,8 +217,7 @@ static void config_switch(btnx_event **bev, int index)
 			return;
 	/* ------------------------------------------------------------------- */
 	
-	switch (bev[index]->switch_type)
-	{
+	switch (bev[index]->switch_type) {
 	case CONFIG_SWITCH_NEXT:
 		name = config_get_next();
 		break;
@@ -244,8 +228,7 @@ static void config_switch(btnx_event **bev, int index)
 		name = bev[index]->switch_name;
 	}
 	
-	if (name == NULL)
-	{
+	if (name == NULL) {
 		daemon_log(LOG_WARNING, OUT_PRE "Warning: config switch failed. "
 				"Invalid configuration name.");
 		return;
@@ -264,13 +247,11 @@ static void send_extra_event(btnx_event **bevs, int index)
 {
 	int tmp_kc = bevs[index]->keycode;
 	
-	if (tmp_kc == COMMAND_EXECUTE)
-	{
+	if (tmp_kc == COMMAND_EXECUTE) {
 		command_execute(bevs[index]);
 		return;
 	}
-	if (tmp_kc == CONFIG_SWITCH)
-	{
+	if (tmp_kc == CONFIG_SWITCH) {
 		config_switch(bevs, index);
 		return;
 	}
@@ -290,8 +271,7 @@ static void send_extra_event(btnx_event **bevs, int index)
  * occurrances of the same event. Delay is in milliseconds, defined in the
  * configuration file. 
  * Returns 0 if delay is satisfied, -1 if there has not been enough delay. */
-static int check_delay(btnx_event *bev)
-{
+static int check_delay(btnx_event *bev) {
 	struct timeval now;
 	gettimeofday(&now, NULL);
 	
@@ -307,33 +287,26 @@ static int check_delay(btnx_event *bev)
 }
 
 /* Parses command line arguments. */
-static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **config_file)
-{
+static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **config_file) {
 	g_exec_path = argv[0];
 	
-	if (argc > 1)
-	{
+	if (argc > 1) {
 		int x;
-		for (x=1; x<argc; x++)
-		{
+		for (x=1; x<argc; x++) {
 			/* Background daemon */
 			if (!strncmp(argv[x], "-b", 2))
 				*bg=1;
 			/* Print version information */
-			else if (!strncmp(argv[x], "-v", 2))
-			{
+			else if (!strncmp(argv[x], "-v", 2)) {
 				printf(	PROGRAM_NAME " v." PROGRAM_VERSION "\n"
 						"Author: Olli Salonen <oasalonen@gmail.com>\n"
 						"Compatible with btnx-config >= v.0.4.7\n");
 				exit(BTNX_EXIT_NORMAL);	
 			}
 			/* Start with specific configuration */
-			else if (!strncmp(argv[x], "-c", 2))
-			{
-				if (x < argc - 1)
-				{
-					if (strlen(argv[x+1]) >= CONFIG_NAME_MAX_SIZE)
-					{
+			else if (!strncmp(argv[x], "-c", 2)) {
+				if (x < argc - 1) {
+					if (strlen(argv[x+1]) >= CONFIG_NAME_MAX_SIZE) {
 						daemon_log(LOG_ERR, OUT_PRE "Error: invalid configuration name.");
 						goto usage;
 					}
@@ -341,8 +314,7 @@ static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **con
 					strcpy(*config_file, argv[x+1]);
 					x++;
 				}
-				else
-				{
+				else {
 					daemon_log(LOG_ERR, OUT_PRE "Error: -c argument used but no "
 							"configuration file name specified.");
 					goto usage;
@@ -353,8 +325,7 @@ static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **con
 				daemon_log_use = DAEMON_LOG_SYSLOG;
 			else if (!strncmp(argv[x], "-k", 2))
 				*kill_all = 1;
-			else
-			{
+			else {
 				usage:
 				daemon_log(LOG_INFO, PROGRAM_NAME " usage:\n"
 						"\tArgument:\tDescription:\n"
@@ -370,8 +341,7 @@ static void main_args(int argc, char *argv[], int *bg, int *kill_all, char **con
 	}
 }
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 	int fd_ev_btn=0, fd_ev_key=-1, fd_daemon=0;
 	fd_set fds;
 	hexdump_t hexdump = {.rawcode=0, .pressed=0};
@@ -389,8 +359,7 @@ int main(int argc, char *argv[])
 	
 	main_args(argc, argv, &bg, &kill_all, &config_name);
 	
-	if (kill_all)
-	{
+	if (kill_all) {
 		if ((ret = daemon_pid_file_kill_wait(SIGINT, 5)) < 0) {
 			daemon_log(LOG_WARNING, OUT_PRE "Failed to kill previous btnx processes");
 		}
@@ -407,8 +376,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	
-	if (system("modprobe uinput") != 0)
-	{
+	if (system("modprobe uinput") != 0)	{
 		daemon_log(LOG_WARNING, OUT_PRE "Modprobe uinput failed. Make sure the uinput "
 				"module is loaded before running btnx. If it's already running,"
 				" no problem.");
@@ -492,8 +460,7 @@ int main(int argc, char *argv[])
 	
 	gettimeofday(&exec_time, NULL);
 	
-	for (;;)
-	{
+	for (;;) {
 		FD_ZERO(&fds);
 		FD_SET(fd_ev_btn, &fds);
 		if (fd_ev_key != -1)
@@ -506,8 +473,7 @@ int main(int argc, char *argv[])
 			daemon_log(LOG_WARNING, OUT_PRE "select() error: %s", strerror(errno));
 		else if (ready == 0)
 			continue;
-		else
-		{
+		else {
 			if (FD_ISSET(fd_ev_btn, &fds))
 				hexdump = btnx_event_read(fd_ev_btn);
 			else if (fd_ev_key != 0 && FD_ISSET(fd_ev_key, &fds))
@@ -532,11 +498,9 @@ int main(int argc, char *argv[])
 			
 			if (hexdump.rawcode == 0)
 				continue;
-			if ((bev_index = btnx_event_get(bevs, hexdump.rawcode, hexdump.pressed)) != -1)
-			{
+			if ((bev_index = btnx_event_get(bevs, hexdump.rawcode, hexdump.pressed)) != -1) {
 				if (bevs[bev_index]->pressed == 1 || bevs[bev_index]->type == BUTTON_IMMEDIATE
-					|| bevs[bev_index]->type == BUTTON_RELEASE)
-				{
+					|| bevs[bev_index]->type == BUTTON_RELEASE) {
 					if (check_delay(bevs[bev_index]) < 0)
 						continue;
 					gettimeofday(&(bevs[bev_index]->last), NULL);
@@ -547,17 +511,15 @@ int main(int argc, char *argv[])
 					continue;
 				if ((bevs[bev_index]->type == BUTTON_IMMEDIATE ||
 					bevs[bev_index]->type == BUTTON_RELEASE) && 
-					bevs[bev_index]->keycode < BTNX_EXTRA_EVENTS)
-				{
+					bevs[bev_index]->keycode < BTNX_EXTRA_EVENTS) {
+					
 					bevs[bev_index]->pressed = 1;
 					uinput_key_press(bevs[bev_index]);
 					bevs[bev_index]->pressed = 0;
 					uinput_key_press(bevs[bev_index]);
 				}
-				else if (bevs[bev_index]->keycode > BTNX_EXTRA_EVENTS)
-				{
-					if (bevs[bev_index]->type == BUTTON_NORMAL)
-					{
+				else if (bevs[bev_index]->keycode > BTNX_EXTRA_EVENTS) {
+					if (bevs[bev_index]->type == BUTTON_NORMAL) {
 						if ((suppress_release = !suppress_release) != 1)
 							send_extra_event(bevs, bev_index);
 					}
