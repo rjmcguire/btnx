@@ -80,7 +80,7 @@ const char handler_locations[][15] = {
 static const char *get_handler_location(int index);
 static int find_handler(struct device_fds_t *dev_fds, int flags, int vendor, int product);
 static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed);
-static hexdump_t btnx_event_read(int fd);
+static hexdump_t btnx_event_read(int fd, int *status);
 static void command_execute(btnx_event *bev);
 static void config_switch(btnx_event **bevs, int index);
 static void send_extra_event(btnx_event **bevs, int index);
@@ -158,12 +158,11 @@ static int btnx_event_get(btnx_event **bevs, int rawcode, int pressed)
 }
 
 /* Extract the rawcode(s) of an input event. */
-static hexdump_t btnx_event_read(int fd) {
+static hexdump_t btnx_event_read(int fd, int *status) {
 	hexdump_t hexdump = {.rawcode = 0, .pressed = 0};
-	int ret;
 	struct input_event ev;
 
-	if ((ret = read(fd, &ev, sizeof(ev))) > 0) {
+	if ((*status = read(fd, &ev, sizeof(ev))) > 0) {
 		if (((ev.code == 0x0000 || ev.code == 0x0001) && ev.type == 0x0002) || (ev.code == 0x0000 && ev.type == 0x0000)) {
 			hexdump.rawcode = 0;
 			hexdump.pressed = 0;
@@ -404,7 +403,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
-	uinput_init("btnx");
+	uinput_init();
 	
 	revoco_launch();
 	
@@ -441,11 +440,13 @@ int main(int argc, char *argv[]) {
 	gettimeofday(&exec_time, NULL);
 	
 	for (;;) {
+	    int read_status;
+	    
 		FD_ZERO(&fds);
 		device_fds_fill_fds(&dev_fds, &fds);
 		FD_SET(fd_daemon, &fds);
 	
-		ready = select(max_fd+1, &fds, NULL, NULL, NULL);	
+		ready = select(max_fd+1, &fds, NULL, NULL, NULL);
 		
 		if (ready == -1)
 			daemon_log(LOG_WARNING, OUT_PRE "select() error: %s", strerror(errno));
@@ -453,8 +454,13 @@ int main(int argc, char *argv[]) {
 			continue;
 		else {
 			set_fd = device_fds_find_set_fd(&dev_fds, &fds);
-			if (set_fd != NULL_FD)
-				hexdump = btnx_event_read(set_fd);
+			if (set_fd != NULL_FD) {
+				hexdump = btnx_event_read(set_fd, &read_status);
+				if (read_status < 0) {
+				    daemon_log(LOG_ERR, OUT_PRE "Handler read failed.");
+				    goto finish_daemon;
+				}
+			}
 			else if (FD_ISSET(fd_daemon, &fds)) {
 				int sig;
 				if ((sig = daemon_signal_next()) <= 0) {
@@ -470,8 +476,10 @@ int main(int argc, char *argv[]) {
 					goto finish_daemon;
 				}
 			}
-			else
+			else {
+			    daemon_log(LOG_WARNING, OUT_PRE "Unexpected fd status.");
 				continue;
+			}
 			
 			if (hexdump.rawcode == 0)
 				continue;

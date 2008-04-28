@@ -1,5 +1,10 @@
 btnx ChangeLog
 
+2008-04-28	v.0.4.10
+	* Fixes unhandled read exception when a button handler closes. Lead to an 
+	infinite loop. Occurred when mouse went to sleep or was unplugged.
+	Fixes bug #223397: https://bugs.launchpad.net/btnx/+bug/223397
+
 2008-04-05	v.0.4.9
 	* Fixes combination release issue. Modifiers were released before the main
 	key which caused the system to register extra main keys during release.

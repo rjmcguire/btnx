@@ -192,7 +192,7 @@ static int config_get_keycode(const char *value)
 	FILE *fp;
 	char buffer[128];
 	char *loc_beg;
-	int len;
+	unsigned int len;
 	
 	/* Length is longer than any defined event */
 	if (strlen(value) > 20)

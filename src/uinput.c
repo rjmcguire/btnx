@@ -31,7 +31,7 @@ static int uinput_kbd_fd = -1;
  * <http://svn.navi.cx/misc/trunk/vision/lib/uinput_mouse.c>
  */
 /* Open and init uinput file descriptors */
-int uinput_init(const char *dev_name) 
+int uinput_init(void) 
 {
   struct uinput_user_dev dev_mouse, dev_kbd;
   int i;
