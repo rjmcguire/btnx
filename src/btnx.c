@@ -345,6 +345,7 @@ int main(int argc, char *argv[]) {
 	int bg=0, ret=BTNX_EXIT_NORMAL;
 	char *config_name=NULL;
 	int kill_all=0;
+	int leave_pid_file=0;
 	pid_t pid;
 	
 	daemon_pid_file_ident = daemon_log_ident = daemon_ident_from_argv0(argv[0]);
@@ -423,6 +424,10 @@ int main(int argc, char *argv[]) {
 	if (daemon_pid_file_create() < 0) {
 		daemon_log(LOG_ERR, OUT_PRE "Could not create PID file: %s", strerror(errno));
 		ret = BTNX_ERROR_CREATE_PID_FILE;
+		
+		/* Do not delete the pid file in finish_daemon in this case, leads to
+		 * extra btnx processes */
+		leave_pid_file = 1;
 		goto finish_daemon;
 	}
 	if (daemon_signal_init(SIGINT, SIGTERM, SIGQUIT, 0) < 0) {
@@ -526,7 +531,8 @@ finish_daemon:
 	uinput_close();
 	device_fds_close(&dev_fds);
 	daemon_signal_done();
-	daemon_pid_file_remove();
+	if (leave_pid_file == 0)
+	  daemon_pid_file_remove();
 	
 	return ret;
 }
