@@ -51,6 +51,7 @@
 #include <sys/ioctl.h>
 
 #include "revoco.h"
+#include "../config.h"
 #include "btnx.h"
 
 #define streq(a,b)		(strcmp((a), (b)) == 0)
@@ -207,7 +208,11 @@ static void mx_cmd(int fd, int b1, int b2, int b3)
 
 static void configure(int handle)
 {
+#if REVOCO_TEMP==1
 	int perm = 0x00;
+#else
+	int perm = 0x80;
+#endif
 	
 	switch (revoco_mode)
 	{
